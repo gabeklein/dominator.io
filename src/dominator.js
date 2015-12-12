@@ -56,6 +56,7 @@ Element = %{
 	 }
 	innerIsInit(){}
 	nodeIsInit(){}
+	init(){ (this.nodeIsInit.apply(this, arguments)||{}).END }
  }, 
 
 Factory = %{
@@ -84,7 +85,7 @@ Factory = %{
 			    if(Node=Type.$Css)for(x=0; x<Node.length;) Elem.node.classList.add(Node[x++]);
 			    t.current.node.insert(Elem);
 			}
-			Node = Type.nodeIsInit.apply(Elem, [Elem].concat(def.ag));
+			Node = Type.init.apply(Elem, [Elem].concat(def.ag));
 			if(def.nm) this.parent[def.nm] = Elem;
 			t.last = Elem;
 		} else {}
@@ -168,7 +169,9 @@ window.dominator = function(opts){
 	var root = {},
 		Deps = New(Commands),
 		doNothing = function(){};
-		
+	
+		Deps.hello = "woo"
+
 	function compile(f){
 		function Insert(){
 			this.$.insert({pr:f,ag:ARGS}); return this;
@@ -191,32 +194,43 @@ window.dominator = function(opts){
 		}}
 		return compile(template);
 	 }
-	function throwNoFactory(){
-		throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
-	 }
 	function link(f, C, X){
 		var x = parse(nEnum(f,"_"), X);
 		C[X] = C[X]
 		  ? x && CloneForIn(x, C[X], true) || C[X]
-		  : x || throwNoFactory;
+		  : x || function throwNoFactory(){
+		  		throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
+		  };
 		for(x in f) link( isArr(f[x])||(f[x] isFun) ? {_:f[x]} : f[x], C[X], x);
 	 }
 	function define(n, factory){
-		for(var i=0, x, C=root, y=(n=n.split('.')).pop(); x=n[i++];) C=C[x]||(C[x]=throwNoFactory);
+		for(var i=0, x, C=root, y=(n=n.split('.')).pop(); x=n[i++];) C=C[x]||(C[x]=function throwNoFactory(){
+			throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
+		 });
 		link(factory isFun || !factory ? {_:ARGS(1)} : factory, C, y);
 	 }
-
-	define.start = (name, deps, target) => {
+	define.use = (deps) => {
+		for(var i=0, x; x=deps[i]; i++){
+			CloneForIn(Deps, root[x]);
+		}
+		return this;
+	}
+	define.start = (name, target) => {
 		if(target && (name = root[name]) isFun){
 			var e;
 			Function.call.call(name, {$:{insert:function(x){e=x.pr}}})
 			e = New(e);
 			e.node = target;
-			e.nodeIsInit(e);
+			e.init(e);
 		}
 		else throw new Error('Wot m8? You have no element called that.');
 	 }
 	return define;
 
 }}
+
+
+
+
+
 

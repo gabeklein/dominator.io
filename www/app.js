@@ -1,10 +1,15 @@
 define = dominator({ settings: null });
 define('Main', {
-    _: [function (t) {
-            t.DO('cardlogo', 'Anything', 1).Test1().END;
-        }],
-    Test1: function ($) {
-        $.DO('uwot', 'bruv').END;
+    _: function (t) {
+        t.DO('cardlogo', 'Anything', 1).Test1().END;
+    },
+    Test1: {
+        _: function ($) {
+            $.DO('uwot', 'bruv').Yolo().img('lol.png').END;
+        },
+        Yolo: function ($) {
+            return $.DO('lol', 'wut');
+        }
     }
 });
 define('Deps', {
@@ -15,5 +20,5 @@ define('Deps', {
     }
 });
 window.onload = function () {
-    define.start('Main', ['Deps'], document.body);
+    define.use(['Deps']).start('Main', document.body);
 };

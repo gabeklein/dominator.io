@@ -62,6 +62,9 @@ function cv(a, b, c) {
             innerIsInit: function () {
             },
             nodeIsInit: function () {
+            },
+            init: function () {
+                (this.nodeIsInit.apply(this, arguments) || {}).END;
             }
         }, Factory = {
             New: function (on) {
@@ -91,7 +94,7 @@ function cv(a, b, c) {
                                 Elem.node.classList.add(Node[x++]);
                         t.current.node.insert(Elem);
                     }
-                    Node = Type.nodeIsInit.apply(Elem, [Elem].concat(def$2.ag));
+                    Node = Type.init.apply(Elem, [Elem].concat(def$2.ag));
                     if (def$2.nm)
                         this.parent[def$2.nm] = Elem;
                     t.last = Elem;
@@ -241,6 +244,7 @@ function cv(a, b, c) {
     window.dominator = function (opts) {
         var root = {}, Deps = New(Commands), doNothing = function () {
             };
+        Deps.hello = 'woo';
         function compile(f) {
             function Insert() {
                 this.$.insert({
@@ -274,21 +278,28 @@ function cv(a, b, c) {
             }
             return compile(template);
         }
-        function throwNoFactory() {
-            throw new Error('Element Class exists but has no constructor! Probably it is a namespace.');
-        }
         function link(f, C, X) {
             var x = parse(nEnum(f, '_'), X);
-            C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || throwNoFactory;
+            C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || function throwNoFactory() {
+                throw new Error('Element Class exists but has no constructor! Probably it is a namespace.');
+            };
             for (x in f)
                 link(isArr(f[x]) || typeof f[x] == 'function' ? { _: f[x] } : f[x], C[X], x);
         }
         function define(n, factory) {
             for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
-                C = C[x] || (C[x] = throwNoFactory);
+                C = C[x] || (C[x] = function throwNoFactory() {
+                    throw new Error('Element Class exists but has no constructor! Probably it is a namespace.');
+                });
             link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C, y);
         }
-        define.start = function (name, deps, target) {
+        define.use = function (deps) {
+            for (var i = 0, x; x = deps[i]; i++) {
+                CloneForIn(Deps, root[x]);
+            }
+            return this;
+        };
+        define.start = function (name, target) {
             if (typeof (target && (name = root[name])) == 'function') {
                 var e;
                 Function.call.call(name, {
@@ -300,7 +311,7 @@ function cv(a, b, c) {
                 });
                 e = New(e);
                 e.node = target;
-                e.nodeIsInit(e);
+                e.init(e);
             } else
                 throw new Error('Wot m8? You have no element called that.');
         };
