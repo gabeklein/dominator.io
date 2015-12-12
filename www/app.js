@@ -1,11 +1,11 @@
 define = dominator({ settings: null });
 define('Main', {
     _: [function (t) {
-            t.DO('cardlogo', 'Anything').Test1().END;
+            t.DO('cardlogo', 'Anything', 1).Test1().END;
         }],
-    Test1: [function ($) {
-            $.DO('uwot', 'm8').END;
-        }]
+    Test1: function ($) {
+        $.DO('uwot', 'bruv').END;
+    }
 });
 define('Deps', {
     img: function ($, src, atr) {

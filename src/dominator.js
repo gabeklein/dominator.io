@@ -29,6 +29,7 @@ CloneForIn = function(to, from, shallow){
 		O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
 	return to;
  },
+nEnum = (a,b) => a&&def(a,b,{enumerable:false})[b],
 Inherit = O.setPrototypeOf
 	|| ({__proto__:[]}) instanceof Array
     	? function(o, p){ o.__proto__ = p; }
@@ -36,21 +37,10 @@ Inherit = O.setPrototypeOf
 
 Element = %{
 	get DO(){
-		LINK() => {
-			C.Unwrap(ARGS);
-			return LINK;
-		};
-		var C = LINK.$ = New(Generator),
-			N = C.root = C.current = New(Generator.Node);
-			C.parent = this;
-			N.i=-1;
-			N.tp='top';
-
+		var C = LINK.$ = Factory.New(this);
 		Inherit(LINK, this.__factory__);
-		def(LINK, "END", {get:function(){
-			C.BuildAndAppend();
-			return "lol done.";
-		}});
+		LINK() => { C.parse(ARGS); return LINK };
+		def(LINK, "END", {get:function(){ C.current.done(); }});
 		return LINK;
 	 }
 	insert(New, insertBefore){(New.parentNode = this).node.appendChild(New.node)}
@@ -65,110 +55,96 @@ Element = %{
 		c(a,b)=>{t.node.addEventListener(a,b)};
 	 }
 	innerIsInit(){}
+	nodeIsInit(){}
  }, 
 
-Generator = %{
-	Node: %{
-		top(p){return p}
-		std(parent){
-			var Type = this.pr,
-				Elem = New(Type), 
-				Node = Type.tagName, x, y;
+Factory = %{
+	New(on){
+		var n = New(this);
+		n.parent = on;
+		n.current = %{
+			i:-1
+			node:on
+			done(){
+				console.log("woo done!")
+			}
+		};
+		return n;
+	}
+	insert(def){
+		var t=this, c=t.current;
+		if(!t.alt){
+			var Type = def.pr,
+				Elem = New(Type),
+				Node = Type.tagName;
 			if(Node){ 
-				Node = Elem.node = document.createElement(Node);
-				if(Type.$Text)Node.textContent = Type.$Text;
-				for(var x in Node = Type.$Atr) Elem.at(x,Node[x]);
-				if(Node=Type.$Css)for(x=0; x<Node.length;) Elem.node.classList.add(Node[x++]);
-				parent.insert(Elem);
+			    Node = Elem.node = document.createElement(Node);
+			    if(Type.$Text)Node.textContent = Type.$Text;
+			    for(var x in Node = Type.$Atr) Elem.at(x,Node[x]);
+			    if(Node=Type.$Css)for(x=0; x<Node.length;) Elem.node.classList.add(Node[x++]);
+			    t.current.node.insert(Elem);
 			}
-			Node = Type.nodeIsInit.apply(Elem, [Elem].concat(this.ag));
-			if(Node&&Node.END isFun) Node.END();
-			return Elem;
-		 }
-		skp(p){ if(this.ts){
-			p=New(p); p.innerIsInit=()=>{}; return p;
-		 } else return this.ch=null }
-		map(parent, before){
-			var i=this, ts=i.ts, ag = i.ag, ch=i.ch, j, k, list=[];
-			if(!ch[0].tp=="std") throw new Error("iterable element can't be special");
-			if(!ag) for(i=1; i<ts; i++) ch[i]=ch[0];
-			else{
-				ch=ch[0]; j=ch.ag.length; this.ch=null;
-				for(i=0,k=ag[0].length+1; i<ts; i++){
-					[].splice.apply(ch.ag, [j,k].concat(ag[i]).concat(i));
-					list.push(ch.std(parent, before));
-				}
+			Node = Type.nodeIsInit.apply(Elem, [Elem].concat(def.ag));
+			if(def.nm) this.parent[def.nm] = Elem;
+			t.last = Elem;
+		} else {}
+		if(def.i) t.push(def.i); else t.next;
+	}
+	push(i){
+		var t=this, c=t.current;
+		t.current=%{
+			i:i
+			node:t.last
+			done(){
+				t.last.innerIsInit();
+				t.current=c;
+				t.next;
 			}
-			return parent;
-		 }
-		dfr(){}
-
-		set i(n){if(n&&!this._i){this.ch=[]; this._i=n}}
-		_i:0
-		tp:'std'
-
-		build($r, node, next, par){
-			var t=this, Node = t[t.tp].call(t,node), ch = t.ch, i, y;
-			if(Node && (i=t.nm)){
-				if(y=par[i]){
-					if(y instanceof Array) y.push(Node);
-					else par[i]=[y, Node];
-				}
-				else par[i]=Node;
-			}
-			if(ch){
-				$r(ch[i=0], Node, ($r) => {
-					if(ch[++i]) $r(ch[i], Node); 
-					else { Node.innerIsInit(); next($r) }
-				})}
-			else{ 
-				if(Node&&Node.innerIsInit) Node.innerIsInit();
-				next($r);
-			} 
-		 }
-	 }
-	Unwrap(args){
-
-		//MIGHT NEED TO INCLUDE IN INITIALIZER; USES NAKED ELEM!
-
-		if(args[0] isNum) return this.current.i=args[0];
-		var $ = New(Element), w = 1, y, i, n, m, name, itr, out={pr:$};
-		$.$Atr={};
-		y=args[0].toLowerCase().split(/(?=[:#\.])/);
-		for(i=0;n=y[i++];){
-			m=n.slice(1)
-			if(n[0]=="#") $.$Atr.id=m; else
-			if(n[0]=="."){ ($.$Css||($.$Css=[])).push(m); } else
-			if(n[0]==":"){name=m; $.tagName=$.tagName||m }
-			else $.tagName=n;
 		}
+	}
+	get next(){
+		this.current.i--;
+		while(this.current.i == 0) this.current.done();
+	}
+	and(n){}
+	make(){}
+	is(n){}
+	on(n){}
+	when(n){}
+	parseID(id,$){
+	    id=id.toLowerCase().replace(" ","").split(/(?=[:#\.@])/);
+	    for(var i=0,m,n,name;n=id[i++];){
+	        m=n.slice(1);
+	        switch(n[0]){
+	            case "@": $.$Atr[m]=0; break;
+	            case "#": $.$Atr.id=m; break;
+	            case ".": ($.$Css||($.$Css=[])).push(m); break;
+	            case ":": name=m; $.tagName=$.tagName||m; break;
+	            default : $.tagName=n;
+	        }
+	    }
+	    return name;
+	}
+	parse(args){
+		if(args[0] isNum) return this.current.i=args[0];
+		var $ = New(Element), w = 1, y, i, n, m, name, nCh;
+		$.$Atr={};
+		name = Factory.parseID(args[0],$);
 		if( (y=args[w]) isStr ){$.$Text=y;w++}
 		if( (y=args[w]) isObj ){for(i in y)$.$Atr[i]=y[i]; w++}
-		if( (y=args[w]) isNum ){itr=y; w++}
-		if( (y=args[w]) isFun ){$.nodeIsInit=y; w++} else $.nodeIsInit=()=>{};
-		out.ag=this.I({pr:$,ag:args.slice(w),nm:name,i:itr})
-	 }
-	I(o){ //Insert
-		var n = New(this.Node),
-			C = this.current;
-		while(!C._i) C = C.up;
-		C._i--; C.ch.push(n);
-		n.up = C;
-		for(var x in o) n[x]=o[x];
-		return this.current = n;
-	 }
-	BuildAndAppend(/*callback*/){
-		var Node=this.parent, Par=Node, Cur = this.root; Call(n)=>{n(); /*callback()*/}
-		while(Cur) Cur.build((X, N, C)=>{ Cur=X; if(N)Node=N; if(C)Call=C }, Node, Call, Par);
+		if( (y=args[w]) isNum ){nCh=y; w++}
+		if( (y=args[w]) isFun ){$.nodeIsInit=y; w++}
+		this.insert({pr:$,ag:args.slice(w),nm:name,i:nCh})
 	 }
  },
 
 Commands = %{
-	a(n)   this.$.current.i=n;
-	b(n){} //break in data to static generator
- 	i(n)   this.$.current.nm = n;
- 	o(n,c) this.$.I({tp:'dfr', as:n, ib:null, i:c||1}); //set ib at build time
-	w(t,c) this.$.I({tp:'skp', ts:t, i:c||1});
+	get a(){this.$.push(); return this;}
+	b(n){}                                 //break in data to static generator
+	get _(){this.$.current.done()}
+ 	i(n)    this.$.is(n);                   //.current.nm = n;
+ 	o(n,c)  this.$.on(cond);                //.I({tp:'dfr', as:n, ib:null, i:c||1}); //set ib (is before) at build time
+	w(t,c)  this.$.when(cond);              //.I({tp:'skp', ts:t, i:c||1});
 	m(){
 		var g=arguments.length, t=arguments[0], x=null, y, k, l, i=1, v, w;
 		if(t && t.forEach){
@@ -182,41 +158,44 @@ Commands = %{
 			} else if(y isFun) x.push(y);
 			else throw new Error("Input must be function or Array divisible by "+t+" as indicated")
 		}} else throw new Error("Map requires number or arrays")
-		this.$.I({tp:'map', ts:t, ag:x, i:1});
+		this.$.make(t, x);
+		//this.$.I({tp:'map', ts:t, ag:x, i:1});
 	 }
  };
 
 window.dominator = function(opts){
 
-	var Elem = New(Element),
-		root = window.rootThing = {},
+	var root = {},
 		Deps = New(Commands),
 		doNothing = function(){};
 		
 	function compile(f){
 		function Insert(){
-			this.$.I({pr:f,ag:ARGS}); return this;
+			this.$.insert({pr:f,ag:ARGS}); return this;
 		}
 		def(f, "__factory__", {value:Insert});
 		Inherit(Insert, Deps);
 		return Insert;
 	 }
-	function parse(f){
-		var template = New(Elem), proto;
-		template.nodeIsInit = f && f isFun? f : f[0] || function(){};
+	function initDefault(){}
+	function parse(f, n){
+		if(!f)return;
+		var template = New(Element), proto = f[1], id=nEnum(proto,"id");
+		template.tagName = id ? Factory.ParseID(id,$) : n.toLowerCase();
+		template.nodeIsInit = f isFun?f:f[0] || initDefault;
 		if(proto isFun) proto.call(template);
-		else &() => {
+		else if(proto){ &() => {
 			for(var x in proto)
 				if(x[0]=="_") (template.$Atr||(temp.$Atr={}))[x.substr(1)] = proto[x]; 
 				else def(template,x,des(proto,x))
-		}
-		return template;
+		}}
+		return compile(template);
 	 }
 	function throwNoFactory(){
 		throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
-	}
+	 }
 	function link(f, C, X){
-		var x = f._ && compile( parse(def(f,"_",{enumerable:false})._) );
+		var x = parse(nEnum(f,"_"), X);
 		C[X] = C[X]
 		  ? x && CloneForIn(x, C[X], true) || C[X]
 		  : x || throwNoFactory;
@@ -230,7 +209,7 @@ window.dominator = function(opts){
 	define.start = (name, deps, target) => {
 		if(target && (name = root[name]) isFun){
 			var e;
-			Function.call.call(name, {$:{I:function(x){e=x.pr}}})
+			Function.call.call(name, {$:{insert:function(x){e=x.pr}}})
 			e = New(e);
 			e.node = target;
 			e.nodeIsInit(e);

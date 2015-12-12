@@ -4,16 +4,17 @@ define("Main", {
 
 	_:[function(t){
 	    t.DO
-	    	("cardlogo", "Anything")
-	    	.Test1()
+	    	("cardlogo", "Anything", 1)
+	    		.Test1()
+	    	//.Test1()
 	    .END;
 	}],
 
-	Test1:[function($){
+	Test1:function($){
 		$.DO
-			("uwot", "m8")
+			("uwot", "bruv")
 		.END
-	}]
+	}
 
 })
 
@@ -28,8 +29,16 @@ window.onload = function(){
 	define.start("Main", ["Deps"], document.body);
 }
 
+// &timesTwo a; a+a;
 
+// {&timesTwo a; a*2}
 
+// { &thingy 
+// 	a,b,c;
+// 	doThing1;
+// 	hello();
+
+// }
 
 
 
