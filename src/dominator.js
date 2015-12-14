@@ -19,33 +19,10 @@ let gets = macro{
 
 "use strict"; 
 cv(a,b,c) => [].slice.call(a,b,c);
-var Err = (() => {
-	function Err(e){
-		return function err(){
-			if(!e isStr && isArr(e)) for(var E="", i=0, a=ARGS; i<e.length-1; i++) E+=e[i]+(a[i]||"");
-			else E=e;
-			throw new Error(E);
-		}
-	}
-	var errors = {}, x, err={
-		register:function(def){
-			for(x in def) this[x]=Err(def[x]);
-		}
-	};
-	return err;
-}());
+
 
 &()=>{
 
-Err.register(%{
-	unevn:["Input must be function or Array divisible by "," as indicated"]
-	nonum:"Map requires number or arrays"
-	incon:"Input arrays not consistent"
-	ninit:"Element Class exists but has no constructor! Probably it is a namespace."
-	nelem:"Error starting on element that does not exist!"
-
-});
-debugger;
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
 isArr = (arr) => O.prototype.toString.call( arr ) === '[object Array]',
 CloneForIn = function(to, from, shallow){ 
@@ -53,6 +30,7 @@ CloneForIn = function(to, from, shallow){
 		O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
 	return to;
  },
+Err = function(err){throw new Error(err)},
 nEnum = (a,b) => a&&def(a,b,{enumerable:false})[b],
 Inherit = O.setPrototypeOf
 	|| ({__proto__:[]}) instanceof Array
@@ -135,7 +113,7 @@ Factory = %{
 		if(!t.alt){
 			var g=arguments.length, t=arguments[0], x=null, y, k, l, i=1, v, w;
 			if(t && t.forEach){
-				for(l=t.length; i<g; i++) if(!arguments.length==l) throw new Error("Input arrays not consistent")
+				for(l=t.length; i<g; i++) if(!arguments.length==l) Err("Input arrays not consistent")
 				x = ARGS;
 			} else if(t isNum){ if(g>1) for(x=[];i<g;i++){
 				y=arguments[i]; 
@@ -143,8 +121,8 @@ Factory = %{
 					if(t>0) for(;k<t;k++) x.push(y.slice(k*l,k*l+l));
 					else for(t*=-1;k<t;k++){x.push(w=[]); for(v=0;v<l;v++) w.push(y[k+t*v]) }
 				} else if(y isFun) x.push(y);
-				else throw new Error("Input must be function or Array divisible by "+t+" as indicated")
-			}} else throw new Error("Map requires number or arrays")
+				else Err("Input must be function or Array divisible by "+t+" as indicated")
+			}} else Err("Map requires number or arrays")
 		} else {}
 	}
 	is(n){}
@@ -222,13 +200,13 @@ window.dominator = function(opts){
 		C[X] = C[X]
 		  ? x && CloneForIn(x, C[X], true) || C[X]
 		  : x || function throwNoFactory(){
-		  		throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
+		  		Err("Element Class exists but has no constructor! Probably it is a namespace.")
 		  };
 		for(x in f) link( isArr(f[x])||(f[x] isFun) ? {_:f[x]} : f[x], C[X], x);
 	 }
 	function define(n, factory){
 		for(var i=0, x, C=root, y=(n=n.split('.')).pop(); x=n[i++];) C=C[x]||(C[x]=function throwNoFactory(){
-			throw new Error("Element Class exists but has no constructor! Probably it is a namespace.")
+			Err("Element Class exists but has no constructor! Probably it is a namespace.")
 		 });
 		link(factory isFun || !factory ? {_:ARGS(1)} : factory, C, y);
 	 }
@@ -247,7 +225,7 @@ window.dominator = function(opts){
 			for(name in target = e.$Atr) e.at(name,target[name])
 			e.init(e);
 		}
-		else throw new Error('Wot m8? You have no element called that.');
+		else Err('Wot m8? You have no element called that.');
 	 }
 	return define;
 

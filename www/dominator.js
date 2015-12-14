@@ -3,44 +3,16 @@ function cv(a, b, c) {
     return [].slice.call(a, b, c);
 }
 ;
-var Err = function () {
-    function Err$2(e) {
-        return function err$2() {
-            if (typeof !e == 'string' && isArr(e))
-                for (var E = '', i = 0, a = cv(arguments); i < e.length - 1; i++)
-                    E += e[i] + (a[i] || '');
-            else
-                E = e;
-            throw new Error(E);
-        };
-    }
-    var errors = {}, x, err = {
-            register: function (def) {
-                for (x in def)
-                    this[x] = Err$2(def[x]);
-            }
-        };
-    return err;
-}();
 (function () {
-    Err.register({
-        unevn: [
-            'Input must be function or Array divisible by ',
-            ' as indicated'
-        ],
-        nonum: 'Map requires number or arrays',
-        incon: 'Input arrays not consistent',
-        ninit: 'Element Class exists but has no constructor! Probably it is a namespace.',
-        nelem: 'Error starting on element that does not exist!'
-    });
-    debugger;
-    var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, isArr$2 = function (arr) {
+    var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, isArr = function (arr) {
             return O.prototype.toString.call(arr) === '[object Array]';
         }, CloneForIn = function (to, from, shallow) {
             for (var key in from)
                 if (!shallow || O.hasOwnProperty(from, key))
                     O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
             return to;
+        }, Err = function (err) {
+            throw new Error(err);
         }, nEnum = function (a, b) {
             return a && def(a, b, { enumerable: false })[b];
         }, Inherit = O.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
@@ -165,7 +137,7 @@ var Err = function () {
                     if (t && t.forEach) {
                         for (l = t.length; i < g; i++)
                             if (!arguments.length == l)
-                                throw new Error('Input arrays not consistent');
+                                Err('Input arrays not consistent');
                         x = cv(arguments);
                     } else if (typeof t == 'number') {
                         if (g > 1)
@@ -186,10 +158,10 @@ var Err = function () {
                                 } else if (typeof y == 'function')
                                     x.push(y);
                                 else
-                                    throw new Error('Input must be function or Array divisible by ' + t + ' as indicated');
+                                    Err('Input must be function or Array divisible by ' + t + ' as indicated');
                             }
                     } else
-                        throw new Error('Map requires number or arrays');
+                        Err('Map requires number or arrays');
                 } else {
                 }
             },
@@ -315,15 +287,15 @@ var Err = function () {
         function link(f, C, X) {
             var x = parse(nEnum(f, '_'), X);
             C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || function throwNoFactory() {
-                throw new Error('Element Class exists but has no constructor! Probably it is a namespace.');
+                Err('Element Class exists but has no constructor! Probably it is a namespace.');
             };
             for (x in f)
-                link(isArr$2(f[x]) || typeof f[x] == 'function' ? { _: f[x] } : f[x], C[X], x);
+                link(isArr(f[x]) || typeof f[x] == 'function' ? { _: f[x] } : f[x], C[X], x);
         }
         function define(n, factory) {
             for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
                 C = C[x] || (C[x] = function throwNoFactory() {
-                    throw new Error('Element Class exists but has no constructor! Probably it is a namespace.');
+                    Err('Element Class exists but has no constructor! Probably it is a namespace.');
                 });
             link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C, y);
         }
@@ -349,7 +321,7 @@ var Err = function () {
                     e.at(name, target[name]);
                 e.init(e);
             } else
-                throw new Error('Wot m8? You have no element called that.');
+                Err('Wot m8? You have no element called that.');
         };
         return define;
     };
