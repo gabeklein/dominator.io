@@ -1,12 +1,24 @@
 define = dominator({ settings: null });
 define('Main', {
-    _: function (t) {
-        t.DO('cardlogo', 'Anything', 1).Test1().END;
-    },
-    Test1: {
-        _: function ($) {
-            $.DO('uwot', 'bruv').Yolo().img('lol.png').END;
+    _: [
+        function ($) {
+            $.DO.m(3)('uwot', 'bruv').END;
         },
+        {
+            ID: '@hello',
+            CSS: 'abs block bg:#eee proxima w200'
+        }
+    ],
+    Test1: {
+        _: [
+            function ($) {
+                return $.DO('uwot', 'bruv').Yolo().img('lol.png');
+            },
+            {
+                getSwag: function () {
+                }
+            }
+        ],
         Yolo: function ($) {
             return $.DO('lol', 'wut');
         }

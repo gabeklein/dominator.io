@@ -2,22 +2,26 @@ define = dominator({settings:null});
 
 define("Main", {
 
-	_:function(t){
-	    t.DO
-	    	("cardlogo", "Anything", 1)
-	    		.Test1()
-	    	//.Test1()
-	    .END;
-	},
+	_:[function($){ 
+		$.DO
+			.m(3)("uwot", "bruv")
+		.END
+	},{
+		ID:"@hello",
+		CSS:"abs block bg:#eee proxima w200"
+	}],
 
 	Test1:{
-		_:function($){
-			$.DO
-				("uwot", "bruv")
-				.Yolo()
-				.img("lol.png")
-			.END
-		},
+		_:[function($){ return $.DO 
+			("uwot", "bruv")
+			.Yolo()
+			.img("lol.png")
+		 },%{
+			getSwag:function(){
+
+			}
+		 }],
+
 		Yolo:function($){
 			return $.DO("lol", "wut")
 		}
@@ -36,9 +40,9 @@ window.onload = function(){
 	define.use(["Deps"]).start("Main", document.body);
 }
 
-// &timesTwo a; a+a;
+// &timesTwo a => a+a;
 
-// {&timesTwo a; a*2}
+// {&timesTwo a: a*2}
 
 // { &thingy 
 // 	a,b,c;
@@ -46,8 +50,3 @@ window.onload = function(){
 // 	hello();
 
 // }
-
-
-
-
-

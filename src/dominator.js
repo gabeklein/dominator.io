@@ -19,9 +19,33 @@ let gets = macro{
 
 "use strict"; 
 cv(a,b,c) => [].slice.call(a,b,c);
+var Err = (() => {
+	function Err(e){
+		return function err(){
+			if(!e isStr && isArr(e)) for(var E="", i=0, a=ARGS; i<e.length-1; i++) E+=e[i]+(a[i]||"");
+			else E=e;
+			throw new Error(E);
+		}
+	}
+	var errors = {}, x, err={
+		register:function(def){
+			for(x in def) this[x]=Err(def[x]);
+		}
+	};
+	return err;
+}());
 
 &()=>{
 
+Err.register(%{
+	unevn:["Input must be function or Array divisible by "," as indicated"]
+	nonum:"Map requires number or arrays"
+	incon:"Input arrays not consistent"
+	ninit:"Element Class exists but has no constructor! Probably it is a namespace."
+	nelem:"Error starting on element that does not exist!"
+
+});
+debugger;
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
 isArr = (arr) => O.prototype.toString.call( arr ) === '[object Array]',
 CloneForIn = function(to, from, shallow){ 
@@ -34,7 +58,6 @@ Inherit = O.setPrototypeOf
 	|| ({__proto__:[]}) instanceof Array
     	? function(o, p){ o.__proto__ = p; }
     	: CloneForIn,
-
 Element = %{
 	get DO(){
 		var C = LINK.$ = Factory.New(this);
@@ -56,9 +79,9 @@ Element = %{
 	 }
 	innerIsInit(){}
 	nodeIsInit(){}
-	init(){ (this.nodeIsInit.apply(this, arguments)||{}).END }
+	set init(a){this.nodeIsInit = a}
+	get init(){ return ()=>{(this.nodeIsInit.apply(this, arguments)||{}).END} }
  }, 
-
 Factory = %{
 	New(on){
 		var n = New(this);
@@ -71,7 +94,7 @@ Factory = %{
 			}
 		};
 		return n;
-	}
+	 }
 	insert(def){
 		var t=this, c=t.current;
 		if(!t.alt){
@@ -108,12 +131,28 @@ Factory = %{
 		while(this.current.i == 0) this.current.done();
 	}
 	and(n){}
-	make(){}
+	map(){
+		if(!t.alt){
+			var g=arguments.length, t=arguments[0], x=null, y, k, l, i=1, v, w;
+			if(t && t.forEach){
+				for(l=t.length; i<g; i++) if(!arguments.length==l) throw new Error("Input arrays not consistent")
+				x = ARGS;
+			} else if(t isNum){ if(g>1) for(x=[];i<g;i++){
+				y=arguments[i]; 
+				if(y.forEach && (y.length % t) == 0){l=Math.abs(y.length/t); k=0;
+					if(t>0) for(;k<t;k++) x.push(y.slice(k*l,k*l+l));
+					else for(t*=-1;k<t;k++){x.push(w=[]); for(v=0;v<l;v++) w.push(y[k+t*v]) }
+				} else if(y isFun) x.push(y);
+				else throw new Error("Input must be function or Array divisible by "+t+" as indicated")
+			}} else throw new Error("Map requires number or arrays")
+		} else {}
+	}
 	is(n){}
 	on(n){}
 	when(n){}
 	parseID(id,$){
 	    id=id.toLowerCase().replace(" ","").split(/(?=[:#\.@])/);
+		$.$Atr={};
 	    for(var i=0,m,n,name;n=id[i++];){
 	        m=n.slice(1);
 	        switch(n[0]){
@@ -125,11 +164,10 @@ Factory = %{
 	        }
 	    }
 	    return name;
-	}
+	 }
 	parse(args){
 		if(args[0] isNum) return this.current.i=args[0];
 		var $ = New(Element), w = 1, y, i, n, m, name, nCh;
-		$.$Atr={};
 		name = Factory.parseID(args[0],$);
 		if( (y=args[w]) isStr ){$.$Text=y;w++}
 		if( (y=args[w]) isObj ){for(i in y)$.$Atr[i]=y[i]; w++}
@@ -140,28 +178,15 @@ Factory = %{
  },
 
 Commands = %{
+ 	i(n)    this.$.is(n);     
+ 	o(name) this.$.on(name);  
+	w(cond) this.$.when(cond);
+	m()     this.$.make.apply(this, arguments);
 	get a(){this.$.push(); return this;}
-	b(n){}                                 //break in data to static generator
-	get _(){this.$.current.done()}
- 	i(n)    this.$.is(n);                   //.current.nm = n;
- 	o(n,c)  this.$.on(cond);                //.I({tp:'dfr', as:n, ib:null, i:c||1}); //set ib (is before) at build time
-	w(t,c)  this.$.when(cond);              //.I({tp:'skp', ts:t, i:c||1});
-	m(){
-		var g=arguments.length, t=arguments[0], x=null, y, k, l, i=1, v, w;
-		if(t && t.forEach){
-			for(l=t.length; i<g; i++) if(!arguments.length==l) throw new Error("Input arrays not consistent")
-			x = ARGS;
-		} else if(t isNum){ if(g>1) for(x=[];i<g;i++){
-			y=arguments[i]; 
-			if(y.forEach && (y.length % t) == 0){l=Math.abs(y.length/t); k=0;
-				if(t>0) for(;k<t;k++) x.push(y.slice(k*l,k*l+l));
-				else for(t*=-1;k<t;k++){x.push(w=[]); for(v=0;v<l;v++) w.push(y[k+t*v]) }
-			} else if(y isFun) x.push(y);
-			else throw new Error("Input must be function or Array divisible by "+t+" as indicated")
-		}} else throw new Error("Map requires number or arrays")
-		this.$.make(t, x);
-		//this.$.I({tp:'map', ts:t, ag:x, i:1});
-	 }
+	get _(){ 
+		var c=this.$.current; 
+		if(c.i<0) this.$.current.done();
+	}
  };
 
 window.dominator = function(opts){
@@ -169,8 +194,6 @@ window.dominator = function(opts){
 	var root = {},
 		Deps = New(Commands),
 		doNothing = function(){};
-	
-		Deps.hello = "woo"
 
 	function compile(f){
 		function Insert(){
@@ -184,7 +207,7 @@ window.dominator = function(opts){
 	function parse(f, n){
 		if(!f)return;
 		var template = New(Element), proto = f[1], id=nEnum(proto,"id");
-		template.tagName = id ? Factory.ParseID(id,$) : n.toLowerCase();
+		template.tagName = id ? Factory.parseID(id,template) : n.toLowerCase();
 		template.nodeIsInit = f isFun?f:f[0] || initDefault;
 		if(proto isFun) proto.call(template);
 		else if(proto){ &() => {
@@ -214,13 +237,14 @@ window.dominator = function(opts){
 			CloneForIn(Deps, root[x]);
 		}
 		return this;
-	}
+	 }
 	define.start = (name, target) => {
 		if(target && (name = root[name]) isFun){
 			var e;
 			Function.call.call(name, {$:{insert:function(x){e=x.pr}}})
 			e = New(e);
 			e.node = target;
+			for(name in target = e.$Atr) e.at(name,target[name])
 			e.init(e);
 		}
 		else throw new Error('Wot m8? You have no element called that.');
@@ -228,9 +252,3 @@ window.dominator = function(opts){
 	return define;
 
 }}
-
-
-
-
-
-
