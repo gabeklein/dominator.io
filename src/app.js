@@ -2,28 +2,35 @@ define = dominator({settings:null});
 
 define("Main", {
 
-	_:[function($){ 
-		$.DO
-			.m(3)("uwot", "bruv")
-		.END
-	},{
+	_:{
 		ID:"@hello",
+		ON:function(t){
+			t.DO(function($){return $
+				("lol", 2)
+					.m(3).Alrighty()
+					("uwot", "bruvi")
+			})
+		},
+		DO:function($){return $
+			("lol", 2)
+				("thing", "lol")
+					//.m(3, [1,2,3]) ("hello")  // .Test1("lol")
+				("uwot", "bruvi")
+		},
+		IN:function(){
+			console.log("herp-derp")
+		},
 		CSS:"abs block bg:#eee proxima w200"
-	}],
+	},
 
-	Test1:{
-		_:[function($){ return $.DO 
-			("uwot", "bruv")
-			.Yolo()
-			.img("lol.png")
-		 },%{
-			getSwag:function(){
-
-			}
-		 }],
-
-		Yolo:function($){
-			return $.DO("lol", "wut")
+	Alrighty:{
+		ID:"lolol",
+		ON:function(t){
+			t.DO(function($){return $
+				("lol", 2)
+					.m(3)("thing", "lol")
+					("uwot", "bruvi")
+			})
 		}
 	}
 

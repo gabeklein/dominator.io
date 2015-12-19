@@ -5,7 +5,7 @@ function cv(a, b, c) {
 ;
 (function () {
     var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, isArr = function (arr) {
-            return O.prototype.toString.call(arr) === '[object Array]';
+            return arr && O.prototype.toString.call(arr) === '[object Array]';
         }, CloneForIn = function (to, from, shallow) {
             for (var key in from)
                 if (!shallow || O.hasOwnProperty(from, key))
@@ -18,20 +18,23 @@ function cv(a, b, c) {
         }, Inherit = O.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
             o.__proto__ = p;
         } : CloneForIn, Element = {
-            get DO() {
-                var C = LINK.$ = Factory.New(this);
-                Inherit(LINK, this.__factory__);
-                function LINK() {
-                    C.parse(cv(arguments));
-                    return LINK;
+            DO: function (f) {
+                function L() {
+                    C.parse(cv(arguments), F);
+                    return L;
                 }
                 ;
-                def(LINK, 'END', {
-                    get: function () {
-                        C.current.done();
+                var C = L.$ = Factory.New(this), F = this.__factory__;
+                Inherit(L, F);
+                if (typeof f == 'function') {
+                    try {
+                        f.call(L, L) === L && L.$.current.done();
+                    } catch (x) {
+                        console.log(x);
                     }
-                });
-                return LINK;
+                } else {
+                    return L;
+                }
             },
             insert: function (New$2, insertBefore) {
                 (New$2.parentNode = this).node.appendChild(New$2.node);
@@ -69,21 +72,21 @@ function cv(a, b, c) {
                 this.nodeIsInit = a;
             },
             get init() {
-                return function () {
-                    (this.nodeIsInit.apply(this, arguments) || {}).END;
+                return function (t, a) {
+                    t.nodeIsInit.apply(t, [t].concat(a));
                 };
             }
         }, Factory = {
             New: function (on) {
-                var n = New(this);
+                var n = New(this), c = n.current = {
+                        i: -1,
+                        node: on,
+                        done: function () {
+                            n.current = c;
+                            on.IN && on.IN();
+                        }
+                    };
                 n.parent = on;
-                n.current = {
-                    i: -1,
-                    node: on,
-                    done: function () {
-                        console.log('woo done!');
-                    }
-                };
                 return n;
             },
             insert: function (def$2) {
@@ -101,28 +104,33 @@ function cv(a, b, c) {
                                 Elem.node.classList.add(Node[x++]);
                         t.current.node.insert(Elem);
                     }
-                    Node = Type.init.apply(Elem, [Elem].concat(def$2.ag));
+                    //Node = Type.init.apply(Elem, [Elem].concat(def.ag));
+                    Node = Type.init(Elem, def$2.ag);
                     if (def$2.nm)
                         this.parent[def$2.nm] = Elem;
                     t.last = Elem;
-                } else {
+                } else if (t.alt = 'map') {
                 }
                 if (def$2.i)
-                    t.push(def$2.i);
+                    t.push(def$2.i, function () {
+                        Elem.IN && Elem.IN();
+                        t.current = c;
+                    });
                 else
                     t.next;
+                return Elem;
             },
-            push: function (i) {
+            push: function (i, d) {
                 var t = this, c = t.current;
                 t.current = {
                     i: i,
                     node: t.last,
                     done: function () {
-                        t.last.innerIsInit();
+                        i && i();
                         t.current = c;
-                        t.next;
                     }
                 };
+                i = t.last.IN;
             },
             get next() {
                 this.current.i--;
@@ -131,19 +139,33 @@ function cv(a, b, c) {
             },
             and: function (n) {
             },
-            map: function () {
-                if (!t.alt) {
-                    var g = arguments.length, t = arguments[0], x = null, y, k, l, i = 1, v, w;
-                    if (t && t.forEach) {
+            map: function (args) {
+                if (!this.alt) {
+                    this.insert = function (def$2) {
+                        if (def$2.i)
+                            Err('Nesting is not yet supported in the map function! Use a constructor instead!');
+                        var list = [];
+                        if (def$2.nm)
+                            this.parent[nm] = list;
+                        for (var i$2 = 0; i$2 < t; i$2++) {
+                            list.push(Factory.insert.call(this, {
+                                pr: def$2.pr,
+                                ag: def$2.ag.concat(x ? x[i$2] : [], i$2)
+                            }));
+                        }
+                        delete this.insert;
+                    };
+                    var g = args.length, t = args[0], x = null, i = 1, y, k, l, v, w;
+                    if (isArr(t)) {
                         for (l = t.length; i < g; i++)
-                            if (!arguments.length == l)
+                            if (args[i].length != l)
                                 Err('Input arrays not consistent');
-                        x = cv(arguments);
+                        x = args;
                     } else if (typeof t == 'number') {
                         if (g > 1)
                             for (x = []; i < g; i++) {
-                                y = arguments[i];
-                                if (y.forEach && y.length % t == 0) {
+                                y = args[i];
+                                if (isArr(y) && y.length % t == 0) {
                                     l = Math.abs(y.length / t);
                                     k = 0;
                                     if (t > 0)
@@ -162,7 +184,18 @@ function cv(a, b, c) {
                             }
                     } else
                         Err('Map requires number or arrays');
+                    if (this.current.i > 0)
+                        this.current.i += t - 1;
+                    t;
+                    //times to repeat
+                    x;
+                    //is the arg matrix;
+                    l;
                 } else {
+                    this.insert = function () {
+                        delete this.insert;
+                        t.next;
+                    };
                 }
             },
             is: function (n) {
@@ -172,7 +205,7 @@ function cv(a, b, c) {
             when: function (n) {
             },
             parseID: function (id, $) {
-                id = id.toLowerCase().replace(' ', '').split(/(?=[:#\.@])/);
+                id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split(/(?=[:#\.@])/);
                 $.$Atr = {};
                 for (var i = 0, m, n, name; n = id[i++];) {
                     m = n.slice(1);
@@ -196,10 +229,12 @@ function cv(a, b, c) {
                 }
                 return name;
             },
-            parse: function (args) {
+            parse: function (args, p_Fac) {
                 if (typeof args[0] == 'number')
                     return this.current.i = args[0];
                 var $ = New(Element), w = 1, y, i, n, m, name, nCh;
+                if (p_Fac)
+                    $.__factory__ = p_Fac;
                 name = Factory.parseID(args[0], $);
                 if (typeof (y = args[w]) == 'string') {
                     $.$Text = y;
@@ -227,7 +262,7 @@ function cv(a, b, c) {
             }
         }, Commands = {
             i: function (n) {
-                this.$.is(n);
+                return this.$.is(n) || this;
             },
             o: function (name) {
                 this.$.on(name);
@@ -236,7 +271,7 @@ function cv(a, b, c) {
                 this.$.when(cond);
             },
             m: function () {
-                this.$.make.apply(this, arguments);
+                return this.$.map(cv(arguments)) || this;
             },
             get a() {
                 this.$.push();
@@ -246,11 +281,14 @@ function cv(a, b, c) {
                 var c = this.$.current;
                 if (c.i < 0)
                     this.$.current.done();
+            },
+            get END() {
+                this.$.current.done();
+                return this.$.cache;
             }
         };
     window.dominator = function (opts) {
-        var root = {}, Deps = New(Commands), doNothing = function () {
-            };
+        var root = {}, Deps = New(Commands);
         function compile(f) {
             function Insert() {
                 this.$.insert({
@@ -263,34 +301,37 @@ function cv(a, b, c) {
             Inherit(Insert, Deps);
             return Insert;
         }
-        function initDefault() {
-        }
         function parse(f, n) {
             if (!f)
                 return;
-            var template = New(Element), proto = f[1], id = nEnum(proto, 'id');
-            template.tagName = id ? Factory.parseID(id, template) : n.toLowerCase();
-            template.nodeIsInit = typeof f == 'function' ? f : f[0] || initDefault;
-            if (typeof proto == 'function')
-                proto.call(template);
-            else if (proto) {
-                (function () {
-                    for (var x in proto)
-                        if (x[0] == '_')
-                            (template.$Atr || (temp.$Atr = {}))[x.substr(1)] = proto[x];
-                        else
-                            def(template, x, des(proto, x));
-                }());
+            var t = New(Element);
+            typeof n == 'string' && (n = n.toLowerCase());
+            if (typeof f == 'function') {
+                t.tagName = n;
+                t.nodeIsInit = f;
+            } else {
+                nEnum(f, 'ID') ? Factory.parseID(f.ID, t) : t.tagName = n || 'noName';
+                n = nEnum(f, 'ON');
+                t.nodeIsInit = nEnum(f, 'DO') ? function () {
+                    n && n.apply(this, arguments);
+                    this.DO(f.DO);
+                } : n || function () {
+                };
+                for (var x in f)
+                    if (x[0] == '_')
+                        (t.$Atr || (t.$Atr = {}))[x.substr(1)] = f[x];
+                    else
+                        def(t, x, des(f, x));
             }
-            return compile(template);
+            return compile(t);
         }
         function link(f, C, X) {
-            var x = parse(nEnum(f, '_'), X);
+            var x = parse(nEnum(f, '_'), X), y;
             C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || function throwNoFactory() {
                 Err('Element Class exists but has no constructor! Probably it is a namespace.');
             };
             for (x in f)
-                link(isArr(f[x]) || typeof f[x] == 'function' ? { _: f[x] } : f[x], C[X], x);
+                link((y = f[x])._ ? y : { _: y }, C[X], x);
         }
         function define(n, factory) {
             for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
