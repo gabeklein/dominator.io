@@ -8,7 +8,7 @@ module.exports = function(grunt) {
             },
             target_2:{
                 src: 'src/*.js',
-                dest: '../TrendAviation/FlyTrendSite/client/'//*/ './www/'
+                dest: /*'../TrendAviation/FlyTrendSite/client/'//*/ './www/'
             }
         },
     //  sass: { dist: { files:{ 'client/main.css' : 'css/main.scss' } } },
