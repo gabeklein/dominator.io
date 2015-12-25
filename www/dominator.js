@@ -112,23 +112,26 @@ function cv(a, b, c) {
                 };
                 return n;
             },
-            insert: function (def$2) {
-                var t = this, Node, Type = def$2.pr, Elem = New(Type), Cur = t.next(Elem);
+            insert: function (def$2, x) {
+                var t = this;
+                if (!def$2)
+                    return t.Current.i = x;
+                var Node, Type = def$2.pr, Elem = New(Type), Cur = t.next(Elem);
                 //, afterInit);
                 t.Current.i = def$2.i || 0;
+                if (def$2.nm)
+                    t.parent[def$2.nm] = Elem;
                 if (Node = Type.tagName) {
                     Node = Elem.node = document.createElement(Node);
                     if (Type.$Text)
                         Node.textContent = Type.$Text;
-                    for (var x in Node = Type.$Atr)
+                    for (x in Node = Type.$Atr)
                         Elem.at(x, Node[x]);
                     if (Node = Type.$Css)
                         for (x = 0; x < Node.length;)
                             Elem.node.classList.add(Node[x++]);
                     Cur.node.append(Elem);
                 }
-                if (def$2.nm)
-                    this.parent[def$2.nm] = Elem;
                 Node = Type.init.apply(Elem, [Elem].concat(def$2.ag));
                 return Elem;
             },
@@ -203,7 +206,7 @@ function cv(a, b, c) {
             },
             parse: function (A, p_Fac) {
                 if (typeof A[0] == 'number' && A.length == 1)
-                    return this.Current.i = A[0];
+                    return this.insert(null, A[0]);
                 var $ = New(Element), w = 1, y, i, n, m, nCh;
                 if (p_Fac)
                     $.__factory__ = p_Fac;
@@ -233,7 +236,8 @@ function cv(a, b, c) {
             }
         }, Commands = {
             i: function (n) {
-                return this.$.is(n) || this;
+                this.$.is(n);
+                return this;
             },
             o: function (name) {
                 this.$.on(name);
@@ -242,10 +246,11 @@ function cv(a, b, c) {
                 this.$.when(cond);
             },
             m: function () {
-                return this.$.map(cv(arguments)) || this;
+                this.$.map(cv(arguments));
+                return this;
             },
             get a() {
-                this.$.Current.i++;
+                this.$.insert(null, 1);
                 return this;
             },
             get _() {

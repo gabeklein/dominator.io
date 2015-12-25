@@ -88,20 +88,22 @@ Build = %{
 		}
 		return n;
 	 }
-	insert(def){
-		var t=this, Node,
+	insert(def, x){
+		var t=this;
+		if(!def) return t.Current.i = x;
+		var Node,
 			Type = def.pr,
 			Elem = New(Type),
 			Cur = t.next(Elem);//, afterInit);
 		t.Current.i = def.i || 0;
+		if(def.nm) t.parent[def.nm] = Elem;
 		if(Node = Type.tagName){
 		    Node = Elem.node = document.createElement(Node);
 		    if(Type.$Text) Node.textContent = Type.$Text;
-		    for(var x in Node = Type.$Atr) Elem.at(x,Node[x]);
+		    for(x in Node = Type.$Atr) Elem.at(x,Node[x]);
 		    if(Node=Type.$Css)for(x=0; x<Node.length;) Elem.node.classList.add(Node[x++]);
 		    Cur.node.append(Elem);
 		}
-		if(def.nm) this.parent[def.nm] = Elem;
 		Node = Type.init.apply(Elem, [Elem].concat(def.ag));
 		return Elem;
 	}
@@ -157,7 +159,7 @@ Build = %{
 		if(this.Current.i>0) this.Current.i+=t-1;
 	 }
 	parse(A, p_Fac){
-		if(A[0] isNum && A.length==1) return this.Current.i=A[0];
+		if(A[0] isNum && A.length==1) return this.insert(null, A[0]);
 		var $=New(Element), w=1, y, i, n, m, nCh;
 		if(p_Fac) $.__factory__=p_Fac;
 		if( (y=A[w]) isStr ){$.$Text=y; w++}
@@ -168,11 +170,11 @@ Build = %{
 	 }
  },
 Commands = %{
- 	i(n){ return this.$.is(n) || this;}
+ 	i(n){ this.$.is(n); return this;}
  	o(name) this.$.on(name);
 	w(cond) this.$.when(cond);
-	m(){return this.$.map(cv(arguments)) || this;}
-	get a(){this.$.Current.i++; return this;}
+	m(){ this.$.map(cv(arguments)); return this;}
+	get a(){this.$.insert(null, 1); return this;}
 	get _(){ 
 		var c=this.$.Current; 
 		if(c.i<0) this.$.Current.done();
