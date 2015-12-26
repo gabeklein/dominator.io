@@ -3,7 +3,7 @@ define = dominator();
 define('Main', {
     _: {
         DO: function ($) {
-            return $('hello', 2)('wow')('wot')('yolow').a('mybolooo').Junk();
+            return $('hello', 2).Junk('lol')(2)('hello')('world')('helo')('lolol');
         }
     },
     Junk: {

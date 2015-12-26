@@ -6,11 +6,11 @@ define("Main", {
 	_:%{
 		DO($){ return $
 			("hello", 2)
-				("wow")
-				("wot")
-			("yolow").a
-				("mybolooo")
-				.Junk()
+				.Junk("lol")(2)
+					("hello")
+					("world")
+				("helo")
+			("lolol")
 		}
 	},
 

@@ -57,9 +57,11 @@ function cv(a, b, c) {
                 F && Inherit(L, F);
                 if (typeof f == 'function')
                     f.call(L, L) === L && L.$.Current.done();
-                else
+                else {
                     //} catch(x){ console.log(x) } }
+                    C.parse(cv(arguments), F);
                     return L;
+                }
             },
             append: function (New$2) {
                 (New$2.parentNode = this).node.appendChild(New$2.node);
@@ -132,7 +134,7 @@ function cv(a, b, c) {
                             Elem.node.classList.add(Node[x++]);
                     Cur.node.append(Elem);
                 }
-                Node = Type.init.apply(Elem, [Elem].concat(def$2.ag));
+                Node = Type.init(Elem, def$2.ag);
                 return Elem;
             },
             next: function (a, b) {
@@ -159,12 +161,12 @@ function cv(a, b, c) {
             },
             map: function (args) {
                 this.insert = function (def$2) {
-                    if (def$2.i)
+                    if (def$2.i || !def$2)
                         Err('Nesting is not yet supported in the map function! Use a constructor instead!');
-                    var list = [];
+                    var list = [], i$2;
                     if (def$2.nm)
                         this.parent[nm] = list;
-                    for (var i$2 = 0; i$2 < t; i$2++) {
+                    for (i$2 = 0; i$2 < t; i$2++) {
                         list.push(Build.insert.call(this, {
                             pr: def$2.pr,
                             ag: def$2.ag.concat(x ? x[i$2] : [], i$2)

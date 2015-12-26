@@ -54,11 +54,15 @@ Element = %{
 	DO(f){
 		function L(){ C.parse(ARGS, F); return L };
 		var C = L.$ = Build.New(this), F=this.__factory__;
+
 		F && Inherit(L,F);
 		if(f isFun)//{ try{ 
 			f.call(L,L)===L && L.$.Current.done(); 
 		//} catch(x){ console.log(x) } }
-		else return L;
+		else{
+			C.parse(ARGS,F)
+			return L;
+		}
 	}
 	append(New){(New.parentNode = this).node.appendChild(New.node)}
 	set text(n){ this.node.appendChild(document.createTextNode(n)) }
@@ -104,7 +108,7 @@ Build = %{
 		    if(Node=Type.$Css)for(x=0; x<Node.length;) Elem.node.classList.add(Node[x++]);
 		    Cur.node.append(Elem);
 		}
-		Node = Type.init.apply(Elem, [Elem].concat(def.ag));
+		Node = Type.init(Elem, def.ag);
 		return Elem;
 	}
 	next(a,b){
@@ -127,10 +131,10 @@ Build = %{
 	}
 	map(args){
 		this.insert=function(def){
-			if(def.i) Err("Nesting is not yet supported in the map function! Use a constructor instead!")
-			var list=[];
+			if(def.i || !def) Err("Nesting is not yet supported in the map function! Use a constructor instead!")
+			var list=[],i;
 			if(def.nm)this.parent[nm]=list;
-			for(var i=0;i<t;i++){
+			for(i=0;i<t;i++){
 				list.push(Build.insert.call(this, {
 					pr:def.pr, ag:def.ag.concat(x?x[i]:[], i)
 				})
