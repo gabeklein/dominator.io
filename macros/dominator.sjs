@@ -1,15 +1,3 @@
-macro contains {
-	rule infix {
-		App($arg:ident (,) ...){$init ...} | {$members:member ...}
-	} => {
-		l(function($arg (,) ...){ $init ... }, { $members (,) ... })
-	}
-	case infix { $name:ident($arg:ident (,) ...){$init ...} | contains {$members:member ...} } => {
-		letstx $tag = [makeValue(unwrapSyntax(#{$name}), #{here})];
-		return #{ l($tag, function($arg (,) ...){ $init ... }, { $members (,) ... }) }
-	}
-}
-
 macro _member{
 	rule{ $name:ident($arg:ident (,) ...){ $body ...}
 	}=>{  $name($arg (,) ...){ $body ...}
@@ -82,7 +70,7 @@ macro bind {
 		letstx $memb = [makeValue(unwrapSyntax(#{$id}), #{here})];
 		return #{this.binds($memb)}
 	}
-}
+ }
 
 macro isStr{rule infix{ $d:expr |} => {typeof $d=="string"}}
 macro isFun{rule infix{ $d:expr |} => {typeof $d=="function"}}
@@ -90,12 +78,43 @@ macro isObj{rule infix{ $d:expr |} => {typeof $d=="object"}}
 macro isNum{rule infix{ $d:expr |} => {typeof $d=="number"}}
 macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
 
-let % = macro{
-	rule{   {$m:member ...} } => {     {$m (,) ...}}
-	rule{ $n{$m:member ...} } => {$n = {$m (,) ...}}
-	rule infix{ $x:expr | $y:expr} => {$x % $y}
-}
+macro dom{
+	case { _ $id:ns_method $cls:dom_cls } => {
+		for(var x=#{$id}, lol = "", i=x.length; i--;) lol = x[i].token.value + lol;
+		letstx $path = [makeValue(lol, #{here})];
+		return #{ define($path, $cls) }
+	}
+ }
+macro ns_method {
+  rule { $prop:ident $rest:ns_prop }
+ }
+macro ns_prop {
+  rule { . $prop:ident $rest:ns_prop }
+  rule { }
+ }
 
+let % = macro{
+	rule{ {$m:member ...} } => {{$m (,) ...}}
+	rule{ $n $c:% } => {$n = $c}
+	rule infix{ $x:expr | $y:expr } => { $x % $y }
+ }
+macro dom_cls{
+	rule{ { $($name:cls_name $body:cls_memb) ... } }=>{ { $($name : $body) (,) ... } }
+ }
+macro cls_name{
+	rule{ self } => { _ }
+	rule{ $x:ident } => { $x }
+ }
+macro cls_memb{
+	rule{ $wtf:% } => { $wtf }
+	rule{ {$m:member ...} } => { {$m (,) ...} }
+	rule{ $cls:dom_cls ... } => { $cls (,) ... }
+	rule{ ($args:ident (,) ...){$body ...} } => { function($args (,) ...){$body ...} }
+ }
+
+
+
+export dom
 export %
 export isStr
 export isFun

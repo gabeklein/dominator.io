@@ -25,7 +25,7 @@ cv(a,b,c) => [].slice.call(a,b,c);
 
 parseID(id,$) => {
     id=id.toLowerCase().replace(new RegExp(" ","g"),"").split(/(?=[:#\.@])/);
-	$.$Atr={};
+	if(!$.$Atr) $.$Atr={};
     for(var i=0,m,n,name;n=id[i++];){
         m=n.slice(1);
         switch(n[0]){
@@ -114,9 +114,17 @@ Build = %{
 	next(a,b){
 		var t=this;
 		var FU = 0;
-		while(t.Current.i === 0){ if(FU++ > 20)break; t.Current.done(); }
+		while(t.Current.i === 0){ if(FU++ > 20) throw new Error("wtf Ho"); t.Current.done(); }
 		var c = t.Current;
-		t.Current = %{
+		t.Current = !a ? %{
+			i:-1 
+			node:c.node
+			done(){
+				t.Current = c;
+				c.i--;
+				t.Last = a;
+			}
+		} : %{
 			i:0
 			node:a
 			done(){
@@ -129,19 +137,23 @@ Build = %{
 		}
 		return c;
 	}
+	is(name){
+		this.parent[name] = this.Current.node
+	}
 	map(args){
 		this.insert=function(def){
 			if(def.i || !def) Err("Nesting is not yet supported in the map function! Use a constructor instead!")
-			var list=[],i;
 			if(def.nm)this.parent[nm]=list;
-			for(i=0;i<t;i++){
+			for(var i=0;i<t;i++){
 				list.push(Build.insert.call(this, {
 					pr:def.pr, ag:def.ag.concat(x?x[i]:[], i)
-				})
-			)}
+				}))
+			}
+			for(def=2; def--;) this.Current.done();
 			delete this.insert;
 		}
-		var g=args.length, t=args[0], x=null, i=1, y, k, l, v, w;
+		var g=args.length, t=args[0], x=null, i=1, list=[], y, k, l, v, w;
+		this.next(null);
 		if(isArr(t)){
 			for(l=t.length; i<g; i++) if(args[i].length!=l) Err("Input arrays not consistent")
 			x = args;
@@ -160,14 +172,15 @@ Build = %{
 			else Err("Input must be function or Array divisible by "+t+" as indicated")
 		}} else Err("Map requires number or arrays")
 
-		if(this.Current.i>0) this.Current.i+=t-1;
+		//if(this.Current.i>0) this.Current.i+=t-1;
 	 }
 	parse(A, p_Fac){
 		if(A[0] isNum && A.length==1) return this.insert(null, A[0]);
+		else if(typeof A[0] != 'string') Err("Anonymous elements require atleast a tagname!");
 		var $=New(Element), w=1, y, i, n, m, nCh;
 		if(p_Fac) $.__factory__=p_Fac;
 		if( (y=A[w]) isStr ){$.$Text=y; w++}
-		if( (y=A[w]) isObj ){for(i in y)$.$Atr[i]=y[i]; w++}
+		if( (y=A[w]) isObj ){$.$Atr = y; w++}
 		if( (y=A[w]) isNum ){nCh=y; w++}
 		if( (y=A[w]) isFun ){$.INIT=y; w++}
 		this.insert({pr:$, i:nCh, ag:A.slice(w), nm:parseID(A[0],$)})
@@ -187,7 +200,6 @@ Commands = %{
 		this.$.Current.done(); return this.$.cache;
 	}
  };
-
 
 window.dominator = function(opts){
 

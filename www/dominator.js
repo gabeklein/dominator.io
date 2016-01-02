@@ -6,7 +6,8 @@ function cv(a, b, c) {
 (function () {
     function parseID(id, $) {
         id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split(/(?=[:#\.@])/);
-        $.$Atr = {};
+        if (!$.$Atr)
+            $.$Atr = {};
         for (var i = 0, m, n, name; n = id[i++];) {
             m = n.slice(1);
             switch (n[0]) {
@@ -142,11 +143,19 @@ function cv(a, b, c) {
                 var FU = 0;
                 while (t.Current.i === 0) {
                     if (FU++ > 20)
-                        break;
+                        throw new Error('wtf Ho');
                     t.Current.done();
                 }
                 var c = t.Current;
-                t.Current = {
+                t.Current = !a ? {
+                    i: -1,
+                    node: c.node,
+                    done: function () {
+                        t.Current = c;
+                        c.i--;
+                        t.Last = a;
+                    }
+                } : {
                     i: 0,
                     node: a,
                     done: function () {
@@ -159,22 +168,27 @@ function cv(a, b, c) {
                 };
                 return c;
             },
+            is: function (name) {
+                this.parent[name] = this.Current.node;
+            },
             map: function (args) {
                 this.insert = function (def$2) {
                     if (def$2.i || !def$2)
                         Err('Nesting is not yet supported in the map function! Use a constructor instead!');
-                    var list = [], i$2;
                     if (def$2.nm)
                         this.parent[nm] = list;
-                    for (i$2 = 0; i$2 < t; i$2++) {
+                    for (var i$2 = 0; i$2 < t; i$2++) {
                         list.push(Build.insert.call(this, {
                             pr: def$2.pr,
                             ag: def$2.ag.concat(x ? x[i$2] : [], i$2)
                         }));
                     }
+                    for (def$2 = 2; def$2--;)
+                        this.Current.done();
                     delete this.insert;
                 };
-                var g = args.length, t = args[0], x = null, i = 1, y, k, l, v, w;
+                var g = args.length, t = args[0], x = null, i = 1, list = [], y, k, l, v, w;
+                this.next(null);
                 if (isArr(t)) {
                     for (l = t.length; i < g; i++)
                         if (args[i].length != l)
@@ -203,12 +217,12 @@ function cv(a, b, c) {
                         }
                 } else
                     Err('Map requires number or arrays');
-                if (this.Current.i > 0)
-                    this.Current.i += t - 1;
             },
             parse: function (A, p_Fac) {
                 if (typeof A[0] == 'number' && A.length == 1)
                     return this.insert(null, A[0]);
+                else if (typeof A[0] != 'string')
+                    Err('Anonymous elements require atleast a tagname!');
                 var $ = New(Element), w = 1, y, i, n, m, nCh;
                 if (p_Fac)
                     $.__factory__ = p_Fac;
@@ -217,8 +231,7 @@ function cv(a, b, c) {
                     w++;
                 }
                 if (typeof (y = A[w]) == 'object') {
-                    for (i in y)
-                        $.$Atr[i] = y[i];
+                    $.$Atr = y;
                     w++;
                 }
                 if (typeof (y = A[w]) == 'number') {

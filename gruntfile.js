@@ -3,23 +3,21 @@ module.exports = function(grunt) {
         sweetjs: {
             options: {
                 readableNames: true,
-                modules: ["./macros/dominator.sjs"],
+                modules: ["/Users/termtm/Projects/Dominator.io/macros/dominator.sjs"],
                 sourceMap: false
             },
-            target_2:{
+            compile:{
                 src: 'src/*.js',
-                dest: /*'../TrendAviation/FlyTrendSite/client/'//*/ './www/'
+                dest: './www/'
             }
         },
-    //  sass: { dist: { files:{ 'client/main.css' : 'css/main.scss' } } },
         watch: {
             options: {
                 nospawn: true
             },
-        //  css: { files: 'css/**/*.scss', tasks: ['sass'] },
             sweetjs: {
                 files: ['src/*.js'],
-                tasks: ['sweetjs:target_2']
+                tasks: ['sweetjs:compile']
             }
         }
     });
