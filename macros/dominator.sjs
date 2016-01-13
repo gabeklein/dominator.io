@@ -12,18 +12,22 @@ macro log{
 	rule{$x:expr} => {console.log($x)}
 }
 
+macro args{
+	rule{ ($arg:ident (,) ...) }
+}
+
 macro member{
 
-	rule{ $name:ident($arg:ident (,) ...){ $body ... }
-	}=>{  $name : function($arg (,) ...){ $body ...}
+	rule{ $name:ident $a:args { $body ... }
+	}=>{  $name : function $a { $body ...}
 	}
 
-	rule{ $name:ident($arg:ident (,) ...) $exp:expr;
-	}=>{  $name : function($arg (,) ...) { $exp } 
+	rule{ $name:ident $a:args $exp:expr;
+	}=>{  $name : function $a { $exp } 
 	}
 
-	rule{ $name:ident($arg:ident (,) ...) => $exp:expr; 
-	}=>{  $name : function($arg (,) ...) { return $exp } 
+	rule{ $name:ident $a:args => $exp:expr
+	}=>{  $name : function $a { return $exp } 
 	}
 
 	rule{ $name:ident : $value:expr } => { $name:$value }
@@ -34,7 +38,6 @@ macro member{
 }
 
 macro => {
-
   rule infix { $[&]() | {$body ...} } => {
        (function() { $body ...  } ) ()
   }
@@ -72,7 +75,7 @@ macro bind {
 	}
  }
 
-macro isStr{rule infix{ $d:expr |} => {typeof $d=="string"}}
+macro isStr{rule infix{ $d:expr |} => {typeof $d=="string"}}/**/
 macro isFun{rule infix{ $d:expr |} => {typeof $d=="function"}}
 macro isObj{rule infix{ $d:expr |} => {typeof $d=="object"}}
 macro isNum{rule infix{ $d:expr |} => {typeof $d=="number"}}

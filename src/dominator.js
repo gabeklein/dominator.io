@@ -51,6 +51,16 @@ nEnum(a,b) => a&&def(a,b,{enumerable:false})[b]
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
 Inherit = O.setPrototypeOf || ({__proto__:[]}) instanceof Array && function(o, p){ o.__proto__ = p; } || CloneForIn,
 Element = %{
+	YO(f){
+		var C = Build.SuperNew(this);
+		if(f isFun)//{ try{ 
+			f.call(C,C)===C && C.$.Current.done(); 
+		//} catch(x){ console.log(x) } }
+		else{
+			C.$.parse(ARGS,F)
+			return C;
+		}
+	}
 	DO(f){
 		function L(){ C.parse(ARGS, F); return L };
 		var C = L.$ = Build.New(this), F=this.__factory__;
@@ -64,32 +74,70 @@ Element = %{
 			return L;
 		}
 	}
+	TO(adr, f){
+		adr = adr.split('.'), i=0, C=this;
+		if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
+		while(adr[i]) if(!(C=C[adr[i++]])) throw new Error("Element '"+adr[i-1]+"' in '"+adr[i-2]+"' Not Found!");
+		
+		function L(){ C.parse(ARGS, F); return L };
+		var C = L.$ = Build.New(this), F=this.__factory__;
+
+		F && Inherit(L,F);
+		if(f isFun)//{ try{ 
+			f.call(L,L)===L && L.$.Current.done(); 
+		//} catch(x){ console.log(x) } }
+		else{
+			C.parse(ARGS,F)
+			return L;
+		}
+	}
+	del(){
+
+	 }
+	itr(n, f){
+        for(var i = 0, l = []; i < n; i++)
+            l.push(f(i));
+        return l;
+     }
+    up(n){
+    	for(var y=this, n=n||1; n--;) y=y.parentNode;
+    	return y;
+     }
 	append(New){(New.parentNode = this).node.appendChild(New.node)}
-	set text(n){ this.node.appendChild(document.createTextNode(n)) }
+	set text(n){var e=this.node; while(e.hasChildNodes()) e.removeChild(e.lastChild); this.node.appendChild(document.createTextNode(n)) }
 	binds(func){var t=this, a=ARGS(1); return function(){t[func].apply(t, a.concat(ARGS))} }
 	at(a,b){b===null||this.node.hasAttribute(a)?this.node.removeAttribute(a):this.node.setAttribute(a,b||'') }
-	on(a){
-		var t = this, x;
-		for(var x in a) c(x,a[x]);
-		return a;
-		c(a,b)=>{t.node.addEventListener(a,b)};
-	 }
+	on(){for(var a, x, i=0, n=this.node; a=arguments[i++];) for(x in a) n.addEventListener(x,a[x])}
 	innerIsInit(){}
 	INIT(){}
 	set init(a){this.INIT = a}
 	get init(){ return (t,a)=>{ t.INIT.apply(t, [t].concat(a)) }}
  }, 
 Build = %{
-	New(on, cb){
+	SuperNew(par, on){
+		function L(){ C.parse(ARGS, F); return L };
+		if(!(n = par._build_)) (n=New(this)).parent = par;
+		var n, cb = n.Current, F=par.__factory__; L.$=n;
+		if(F) Inherit(L,F);
+		n.Current = %{
+			i:-1
+			node:on || par
+			done:cb isFun ? cb : function(){
+				n.Current = cb;
+			}
+		};
+		return L;
+	 }
+	New(on){
 		if(!(n = on._build_)) (n=New(this)).parent = on;
-		var n, cb = cb || n.Current;
+		var n, cb = n.Current;
 		n.Current = %{
 			i:-1
 			node:on
 			done:cb isFun ? cb : function(){
 				n.Current = cb;
 			}
-		}
+		};
 		return n;
 	 }
 	insert(def, x){
@@ -100,7 +148,7 @@ Build = %{
 			Elem = New(Type),
 			Cur = t.next(Elem);//, afterInit);
 		t.Current.i = def.i || 0;
-		if(def.nm) t.parent[def.nm] = Elem;
+		if(def.nm) t.is(def.nm);
 		if(Node = Type.tagName){
 		    Node = Elem.node = document.createElement(Node);
 		    if(Type.$Text) Node.textContent = Type.$Text;
@@ -110,11 +158,10 @@ Build = %{
 		}
 		Node = Type.init(Elem, def.ag);
 		return Elem;
-	}
+	 }
 	next(a,b){
 		var t=this;
-		var FU = 0;
-		while(t.Current.i === 0){ if(FU++ > 20) throw new Error("wtf Ho"); t.Current.done(); }
+		while(t.Current.i === 0) t.Current.done(); 
 		var c = t.Current;
 		t.Current = !a ? %{
 			i:-1 
@@ -136,14 +183,22 @@ Build = %{
 			}
 		}
 		return c;
-	}
+	 }
 	is(name){
-		this.parent[name] = this.Current.node
-	}
+		var c = this.Current, p = this.parent, n = name || c.tagName, c=c.node;
+		p[n] ? isArr(p[n]) ? p[n].push(c) : p[n] = [p[n], c] : p[n] = c;
+	 }
+	when(x){
+		if(!x) this.insert = function(){
+			if(def.i || !def) Err("Nesting is not yet supported in the when function!")
+			this.next(null);
+			delete this.insert;
+		}
+	 }
 	map(args){
 		this.insert=function(def){
-			if(def.i || !def) Err("Nesting is not yet supported in the map function! Use a constructor instead!")
-			if(def.nm)this.parent[nm]=list;
+			
+			if(def.nm)this.parent[def.nm]=list;
 			for(var i=0;i<t;i++){
 				list.push(Build.insert.call(this, {
 					pr:def.pr, ag:def.ag.concat(x?x[i]:[], i)
@@ -188,9 +243,10 @@ Build = %{
  },
 Commands = %{
  	i(n){ this.$.is(n); return this;}
- 	o(name) this.$.on(name);
-	w(cond) this.$.when(cond);
+ 	o(name){ this.$.on(name); return this;}
+	w(cond) {this.$.when(cond); return this;}
 	m(){ this.$.map(cv(arguments)); return this;}
+	M(){ this.a.$.map(cv(arguments)); return this;}
 	get a(){this.$.insert(null, 1); return this;}
 	get _(){ 
 		var c=this.$.Current; 

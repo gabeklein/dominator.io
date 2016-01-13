@@ -8,7 +8,7 @@ function cv(a, b, c) {
         id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split(/(?=[:#\.@])/);
         if (!$.$Atr)
             $.$Atr = {};
-        for (var i = 0, m, n, name; n = id[i++];) {
+        for (var i$2 = 0, m, n, name; n = id[i$2++];) {
             m = n.slice(1);
             switch (n[0]) {
             case '@':
@@ -64,10 +64,48 @@ function cv(a, b, c) {
                     return L;
                 }
             },
+            TO: function (adr, f) {
+                adr = adr.split('.'), i = 0, C = this;
+                if (!isNaN(adr[0]))
+                    C = C.up(parseInt(adr[i++]));
+                while (adr[i])
+                    if (!(C = C[adr[i++]]))
+                        throw new Error('Element \'' + adr[i - 1] + '\' in \'' + adr[i - 2] + '\' Not Found!');
+                function L() {
+                    C.parse(cv(arguments), F);
+                    return L;
+                }
+                ;
+                var C = L.$ = Build.New(this), F = this.__factory__;
+                F && Inherit(L, F);
+                if (typeof f == 'function')
+                    //{ try{ 
+                    f.call(L, L) === L && L.$.Current.done();
+                else {
+                    //} catch(x){ console.log(x) } }
+                    C.parse(cv(arguments), F);
+                    return L;
+                }
+            },
+            del: function () {
+            },
+            itr: function (n, f) {
+                for (var i$2 = 0, l = []; i$2 < n; i$2++)
+                    l.push(f(i$2));
+                return l;
+            },
+            up: function (n) {
+                for (var y = this, n = n || 1; n--;)
+                    y = y.parentNode;
+                return y;
+            },
             append: function (New$2) {
                 (New$2.parentNode = this).node.appendChild(New$2.node);
             },
             set text(n) {
+                var e = this.node;
+                while (e.hasChildNodes())
+                    e.removeChild(e.lastChild);
                 this.node.appendChild(document.createTextNode(n));
             },
             binds: function (func) {
@@ -79,15 +117,10 @@ function cv(a, b, c) {
             at: function (a, b) {
                 b === null || this.node.hasAttribute(a) ? this.node.removeAttribute(a) : this.node.setAttribute(a, b || '');
             },
-            on: function (a) {
-                var t = this, x;
-                for (var x in a)
-                    c(x, a[x]);
-                return a;
-                function c(a$2, b) {
-                    t.node.addEventListener(a$2, b);
-                }
-                ;
+            on: function () {
+                for (var a, x, i$2 = 0, n = this.node; a = arguments[i$2++];)
+                    for (x in a)
+                        n.addEventListener(x, a[x]);
             },
             innerIsInit: function () {
             },
@@ -123,7 +156,7 @@ function cv(a, b, c) {
                 //, afterInit);
                 t.Current.i = def$2.i || 0;
                 if (def$2.nm)
-                    t.parent[def$2.nm] = Elem;
+                    t.is(def$2.nm);
                 if (Node = Type.tagName) {
                     Node = Elem.node = document.createElement(Node);
                     if (Type.$Text)
@@ -140,12 +173,8 @@ function cv(a, b, c) {
             },
             next: function (a, b) {
                 var t = this;
-                var FU = 0;
-                while (t.Current.i === 0) {
-                    if (FU++ > 20)
-                        throw new Error('wtf Ho');
+                while (t.Current.i === 0)
                     t.Current.done();
-                }
                 var c = t.Current;
                 t.Current = !a ? {
                     i: -1,
@@ -169,35 +198,46 @@ function cv(a, b, c) {
                 return c;
             },
             is: function (name) {
-                this.parent[name] = this.Current.node;
+                var c = this.Current, p = this.parent, n = name || c.tagName, c = c.node;
+                p[n] ? isArr(p[n]) ? p[n].push(c) : p[n] = [
+                    p[n],
+                    c
+                ] : p[n] = c;
+            },
+            when: function (x) {
+                if (!x)
+                    this.insert = function () {
+                        if (def.i || !def)
+                            Err('Nesting is not yet supported in the when function!');
+                        this.next(null);
+                        delete this.insert;
+                    };
             },
             map: function (args) {
                 this.insert = function (def$2) {
-                    if (def$2.i || !def$2)
-                        Err('Nesting is not yet supported in the map function! Use a constructor instead!');
                     if (def$2.nm)
-                        this.parent[nm] = list;
-                    for (var i$2 = 0; i$2 < t; i$2++) {
+                        this.parent[def$2.nm] = list;
+                    for (var i$3 = 0; i$3 < t; i$3++) {
                         list.push(Build.insert.call(this, {
                             pr: def$2.pr,
-                            ag: def$2.ag.concat(x ? x[i$2] : [], i$2)
+                            ag: def$2.ag.concat(x ? x[i$3] : [], i$3)
                         }));
                     }
                     for (def$2 = 2; def$2--;)
                         this.Current.done();
                     delete this.insert;
                 };
-                var g = args.length, t = args[0], x = null, i = 1, list = [], y, k, l, v, w;
+                var g = args.length, t = args[0], x = null, i$2 = 1, list = [], y, k, l, v, w;
                 this.next(null);
                 if (isArr(t)) {
-                    for (l = t.length; i < g; i++)
-                        if (args[i].length != l)
+                    for (l = t.length; i$2 < g; i$2++)
+                        if (args[i$2].length != l)
                             Err('Input arrays not consistent');
                     x = args;
                 } else if (typeof t == 'number') {
                     if (g > 1)
-                        for (x = []; i < g; i++) {
-                            y = args[i];
+                        for (x = []; i$2 < g; i$2++) {
+                            y = args[i$2];
                             if (isArr(y) && y.length % t == 0) {
                                 l = Math.abs(y.length / t);
                                 k = 0;
@@ -223,7 +263,7 @@ function cv(a, b, c) {
                     return this.insert(null, A[0]);
                 else if (typeof A[0] != 'string')
                     Err('Anonymous elements require atleast a tagname!');
-                var $ = New(Element), w = 1, y, i, n, m, nCh;
+                var $ = New(Element), w = 1, y, i$2, n, m, nCh;
                 if (p_Fac)
                     $.__factory__ = p_Fac;
                 if (typeof (y = A[w]) == 'string') {
@@ -256,12 +296,18 @@ function cv(a, b, c) {
             },
             o: function (name) {
                 this.$.on(name);
+                return this;
             },
             w: function (cond) {
                 this.$.when(cond);
+                return this;
             },
             m: function () {
                 this.$.map(cv(arguments));
+                return this;
+            },
+            M: function () {
+                this.a.$.map(cv(arguments));
                 return this;
             },
             get a() {
@@ -325,14 +371,14 @@ function cv(a, b, c) {
                 link((y = f[x])._ ? y : { _: y }, C[X], x);
         }
         function define(n, factory) {
-            for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
+            for (var i$2 = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i$2++];)
                 C = C[x] || (C[x] = function throwNoFactory() {
                     Err('Element Class exists but has no constructor! Probably it is a namespace.');
                 });
             link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C, y);
         }
         define.use = function (deps) {
-            for (var i = 0, x; x = deps[i]; i++)
+            for (var i$2 = 0, x; x = deps[i$2]; i$2++)
                 CloneForIn(Deps, root[x]);
             return this;
         };
