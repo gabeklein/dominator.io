@@ -65,6 +65,10 @@ macro => {
 }
 
 macro bind {
+	case { _ $id:ident() } => {
+		letstx $memb = [makeValue(unwrapSyntax(#{$id}), #{here})];
+		return #{this.binds($memb)}
+	}
 	case { _ $id:ident($arg:ident (,) ...) } => {
 		letstx $memb = [makeValue(unwrapSyntax(#{$id}), #{here})];
 		return #{this.binds($memb, $arg (,) ...)}

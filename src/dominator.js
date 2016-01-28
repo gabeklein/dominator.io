@@ -56,8 +56,8 @@ Element = %{
 		if(f isFun)//{ try{ 
 			f.call(C,C)===C && C.$.Current.done(); 
 		//} catch(x){ console.log(x) } }
-		else{
-			C.$.parse(ARGS,F)
+		else {
+			if(f) C.$.parse(ARGS,F);
 			return C;
 		}
 	}
@@ -67,30 +67,30 @@ Element = %{
 
 		F && Inherit(L,F);
 		if(f isFun)//{ try{ 
-			f.call(L,L)===L && L.$.Current.done(); 
+			f.call(this,L)===L && L.$.Current.done(); 
 		//} catch(x){ console.log(x) } }
 		else{
-			C.parse(ARGS,F)
+			if(f) C.parse(ARGS,F)
 			return L;
 		}
 	}
-	TO(adr, f){
-		adr = adr.split('.'), i=0, C=this;
-		if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
-		while(adr[i]) if(!(C=C[adr[i++]])) throw new Error("Element '"+adr[i-1]+"' in '"+adr[i-2]+"' Not Found!");
+	// TO(adr, f){
+	// 	adr = adr.split('.'), i=0, C=this;
+	// 	if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
+	// 	while(adr[i]) if(!(C=C[adr[i++]])) throw new Error("Element '"+adr[i-1]+"' in '"+adr[i-2]+"' Not Found!");
 		
-		function L(){ C.parse(ARGS, F); return L };
-		var C = L.$ = Build.New(this), F=this.__factory__;
+	// 	function L(){ C.parse(ARGS, F); return L };
+	// 	var C = L.$ = Build.New(this), F=this.__factory__;
 
-		F && Inherit(L,F);
-		if(f isFun)//{ try{ 
-			f.call(L,L)===L && L.$.Current.done(); 
-		//} catch(x){ console.log(x) } }
-		else{
-			C.parse(ARGS,F)
-			return L;
-		}
-	}
+	// 	F && Inherit(L,F);
+	// 	if(f isFun)//{ try{ 
+	// 		f.call(L,L)===L && L.$.Current.done(); 
+	// 	//} catch(x){ console.log(x) } }
+	// 	else{
+	// 		C.parse(ARGS,F)
+	// 		return L;
+	// 	}
+	// }
 	del(){
 
 	 }
@@ -106,7 +106,10 @@ Element = %{
 	append(New){(New.parentNode = this).node.appendChild(New.node)}
 	set text(n){var e=this.node; while(e.hasChildNodes()) e.removeChild(e.lastChild); this.node.appendChild(document.createTextNode(n)) }
 	binds(func){var t=this, a=ARGS(1); return function(){t[func].apply(t, a.concat(ARGS))} }
-	at(a,b){b===null||this.node.hasAttribute(a)?this.node.removeAttribute(a):this.node.setAttribute(a,b||'') }
+	at(a,b){
+		(b===null || !b && this.node.hasAttribute(a))
+		?this.node.removeAttribute(a)
+		:this.node.setAttribute(a,b!=true&&b||'') }
 	on(){for(var a, x, i=0, n=this.node; a=arguments[i++];) for(x in a) n.addEventListener(x,a[x])}
 	innerIsInit(){}
 	INIT(){}
@@ -276,7 +279,7 @@ window.dominator = function(opts){
 		} else {
 			nEnum(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName"); n = nEnum(f,"ON");
 			t.INIT = nEnum(f,"DO")
-				? function(){ n && n.apply(this, arguments); this.DO(f.DO) }
+				? function(){ n && n.apply(this, arguments); this.DO(f.DO);     /*.apply(this, arguments);*/ }
 				: n || function(){};
 			for(var x in f)
 				if(x[0]=="_") (t.$Atr||(t.$Atr={}))[x.substr(1)] = f[x]; 
