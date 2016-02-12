@@ -48,34 +48,6 @@ function cv(a, b, c) {
     var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, Inherit = O.setPrototypeOf || { __proto__: [] } instanceof Array && function (o, p) {
             o.__proto__ = p;
         } || CloneForIn, Element = {
-            YO: function (f) {
-                var C$2 = Build.SuperNew(this);
-                if (typeof f == 'function')
-                    f.call(C$2, C$2) === C$2 && C$2.$.Current.done();
-                else {
-                    if (//} catch(x){ console.log(x) } }
-                        f)
-                        C$2.$.parse(cv(arguments), F);
-                    return C$2;
-                }
-            },
-            DO: function (f) {
-                function L() {
-                    C$2.parse(cv(arguments), F$2);
-                    return L;
-                }
-                ;
-                var C$2 = L.$ = Build.New(this), F$2 = this.__factory__;
-                F$2 && Inherit(L, F$2);
-                if (typeof f == 'function')
-                    f.call(this, L) === L && L.$.Current.done();
-                else {
-                    if (//} catch(x){ console.log(x) } }
-                        f)
-                        C$2.parse(cv(arguments), F$2);
-                    return L;
-                }
-            },
             // TO(adr, f){
             // 	adr = adr.split('.'), i=0, C=this;
             // 	if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
@@ -91,6 +63,62 @@ function cv(a, b, c) {
             // 		return L;
             // 	}
             // }
+            DO: function (f) {
+                var C = Build.SuperNew(this), c = C.$.Current;
+                if (typeof f == 'function')
+                    f.call(c.node, C) === C && c.done();
+                else if (//remember to put scope resolution on this. Transfer to supernew maybe?
+                    f)
+                    C.parse(cv(arguments));
+                return C;
+            },
+            // DO(f){
+            // 	function L(){ C.parse(ARGS, F); return L };
+            // 	var C = L.$ = Build.New(this), F=this.__factory__;
+            // 	if(F) Inherit(L,F);
+            // 	if(f isFun)
+            // 		f.call(this,L)===L && L.$.Current.done();
+            // 	else
+            // 		return f ? Function.apply.call(L, this, arguments) : L; //f check is failsafe for empty intro element 
+            // }
+            USE: function (name, i) {
+                if (typeof name == 'number')
+                    i = name;
+                name = 'V';
+                if (typeof (i = this[name = name + i]) == 'function')
+                    this.DO(i);
+            },
+            ON: function (one, arg) {
+                var a, x, t = this, n = t.node, i = 0, g = one == true ? arg : arguments, listen = one == true ? function (a$2, b) {
+                        function once(e) {
+                            delete t.listeners[a$2];
+                            b(e);
+                            n.removeEventListener(a$2, once);
+                        }
+                        t.listeners[a$2] = b;
+                        n.addEventListener(a$2, once);
+                    } : function (a$2, b) {
+                        t.listeners[a$2] = b;
+                        n.addEventListener(a$2, b);
+                    };
+                if (!t.listeners)
+                    t.listeners = {};
+                for (; a = g[i];)
+                    if (typeof a == 'string') {
+                        listen(a, g[i + 1]);
+                        i += 2;
+                    } else
+                        for (x in a) {
+                            listen(x, a[x]);
+                            i++;
+                        }
+            },
+            ONE: function () {
+                this.ON(true, arguments);
+            },
+            OFF: function (a) {
+                this.node.removeEventListener(a, this.listeners[a]);
+            },
             del: function () {
             },
             itr: function (n, f) {
@@ -119,12 +147,12 @@ function cv(a, b, c) {
                 };
             },
             at: function (a, b) {
-                b === null || !b && this.node.hasAttribute(a) ? this.node.removeAttribute(a) : this.node.setAttribute(a, b != true && b || '');
+                var n = this.node;
+                b === null || !b && n.hasAttribute(a) ? n.removeAttribute(a) : n.setAttribute(a, b != true && b || '');
             },
-            on: function () {
-                for (var a, x, i = 0, n = this.node; a = arguments[i++];)
-                    for (x in a)
-                        n.addEventListener(x, a[x]);
+            cl: function (a, b) {
+                var n = this.node.classList;
+                b === null ? n.remove(a) : n.toggle(a);
             },
             innerIsInit: function () {
             },
@@ -141,16 +169,18 @@ function cv(a, b, c) {
         }, Build = {
             SuperNew: function (par, on) {
                 function L() {
-                    C.parse(cv(arguments), F$2);
+                    $.parse(cv(arguments), F);
                     return L;
                 }
                 ;
                 if (!(n = par._build_))
                     (n = New(this)).parent = par;
-                var n, cb = n.Current, F$2 = par.__factory__;
-                L.$ = n;
-                if (F$2)
-                    Inherit(L, F$2);
+                var n, cb = n.Current, F = par.__factory__, $ = L.$ = n;
+                if (F)
+                    Inherit(L, F);
+                L.parse = function (a) {
+                    $.parse(a, F);
+                };
                 n.Current = {
                     i: -1,
                     node: on || par,
@@ -351,11 +381,12 @@ function cv(a, b, c) {
         };
     window.dominator = function (opts) {
         var root = {}, Deps = New(Commands);
-        function compile(f) {
+        function compile(f, n) {
             function Insert() {
                 this.$.insert({
                     pr: f,
-                    ag: cv(arguments)
+                    ag: cv(arguments),
+                    nm: n || undefined
                 });
                 return this;
             }
@@ -367,17 +398,23 @@ function cv(a, b, c) {
             if (!f)
                 return;
             var t = New(Element);
-            typeof n == 'string' && (n = n.toLowerCase());
+            if (typeof n == 'string')
+                n = n.toLowerCase();
             if (typeof f == 'function') {
                 t.tagName = n;
                 t.INIT = f;
             } else {
+                //when element is set again, it ignores first id, then collides with existing id if same.
+                //This forces it into array mode because it thinks it's a dupe.
+                //fix.
                 nEnum(f, 'ID') ? parseID(f.ID, t) : t.tagName = n || 'noName';
-                n = nEnum(f, 'ON');
-                t.INIT = nEnum(f, 'DO') ? function () {
-                    n && n.apply(this, arguments);
+                var on = nEnum(f, 'ON');
+                t.INIT = nEnum(f, 'DO') ? on ? function () {
+                    on.apply(this, arguments);
                     this.DO(f.DO);
-                } : n || function () {
+                } : function () {
+                    this.DO(f.DO);
+                } : on || function () {
                 };
                 for (var x in f)
                     if (x[0] == '_')
@@ -385,22 +422,22 @@ function cv(a, b, c) {
                     else
                         def(t, x, des(f, x));
             }
-            return compile(t);
+            return compile(t, n);
         }
-        function link(f, C$2, X) {
+        function link(f, C, X) {
             var x = parse(nEnum(f, '_'), X), y;
-            C$2[X] = C$2[X] ? x && CloneForIn(x, C$2[X], true) || C$2[X] : x || function throwNoFactory() {
+            C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || function throwNoFactory() {
                 Err('Element Class exists but has no constructor! Probably it is a namespace.');
             };
             for (x in f)
-                link((y = f[x])._ ? y : { _: y }, C$2[X], x);
+                link((y = f[x])._ ? y : { _: y }, C[X], x);
         }
         function define(n, factory) {
-            for (var i = 0, x, C$2 = root, y = (n = n.split('.')).pop(); x = n[i++];)
-                C$2 = C$2[x] || (C$2[x] = function throwNoFactory() {
+            for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
+                C = C[x] || (C[x] = function throwNoFactory() {
                     Err('Element Class exists but has no constructor! Probably it is a namespace.');
                 });
-            link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C$2, y);
+            link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C, y);
         }
         define.use = function (deps) {
             for (var i = 0, x; x = deps[i]; i++)

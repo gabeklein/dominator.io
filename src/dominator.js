@@ -51,29 +51,6 @@ nEnum(a,b) => a&&def(a,b,{enumerable:false})[b]
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
 Inherit = O.setPrototypeOf || ({__proto__:[]}) instanceof Array && function(o, p){ o.__proto__ = p; } || CloneForIn,
 Element = %{
-	YO(f){
-		var C = Build.SuperNew(this);
-		if(f isFun)//{ try{ 
-			f.call(C,C)===C && C.$.Current.done(); 
-		//} catch(x){ console.log(x) } }
-		else {
-			if(f) C.$.parse(ARGS,F);
-			return C;
-		}
-	}
-	DO(f){
-		function L(){ C.parse(ARGS, F); return L };
-		var C = L.$ = Build.New(this), F=this.__factory__;
-
-		F && Inherit(L,F);
-		if(f isFun)//{ try{ 
-			f.call(this,L)===L && L.$.Current.done(); 
-		//} catch(x){ console.log(x) } }
-		else{
-			if(f) C.parse(ARGS,F)
-			return L;
-		}
-	}
 	// TO(adr, f){
 	// 	adr = adr.split('.'), i=0, C=this;
 	// 	if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
@@ -91,9 +68,47 @@ Element = %{
 	// 		return L;
 	// 	}
 	// }
-	del(){
+	DO(f){
+		var C = Build.SuperNew(this), c = C.$.Current;
+		if(f isFun) f.call(c.node,C)===C && c.done(); //remember to put scope resolution on this. Transfer to supernew maybe?
+		else if(f) C.parse(ARGS);
+		return C;
+	}
+	// DO(f){
+	// 	function L(){ C.parse(ARGS, F); return L };
+	// 	var C = L.$ = Build.New(this), F=this.__factory__;
 
-	 }
+	// 	if(F) Inherit(L,F);
+	// 	if(f isFun)
+	// 		f.call(this,L)===L && L.$.Current.done();
+	// 	else
+	// 		return f ? Function.apply.call(L, this, arguments) : L; //f check is failsafe for empty intro element 
+	// }
+	USE(name, i){
+		if(name isNum) i=name; name = "V";
+		if((i = this[name = name+i]) isFun) this.DO(i);
+	}
+	ON(one, arg){
+		var a, x, t=this, n=t.node, i=0, g=one==true?arg:arguments,
+			listen = one==true ? (a,b) => {
+				once(e)=>{
+					delete t.listeners[a];
+					b(e); n.removeEventListener(a, once);
+				}
+				t.listeners[a] = b;
+				n.addEventListener(a, once);
+			} : (a,b) => {
+				t.listeners[a] = b;
+				n.addEventListener(a, b);
+			};
+		if(!t.listeners) t.listeners = {};
+		for (;a = g[i];)
+		    if(a isStr){ listen(a, g[i+1]); i+=2}
+		    else for(x in a){ listen(x, a[x]); i++ }
+	}
+	ONE(){ this.ON(true, arguments) }
+	OFF(a){ this.node.removeEventListener(a,this.listeners[a]) }
+	del(){}
 	itr(n, f){
         for(var i = 0, l = []; i < n; i++)
             l.push(f(i));
@@ -106,11 +121,15 @@ Element = %{
 	append(New){(New.parentNode = this).node.appendChild(New.node)}
 	set text(n){var e=this.node; while(e.hasChildNodes()) e.removeChild(e.lastChild); this.node.appendChild(document.createTextNode(n)) }
 	binds(func){var t=this, a=ARGS(1); return function(){t[func].apply(t, a.concat(ARGS))} }
-	at(a,b){
-		(b===null || !b && this.node.hasAttribute(a))
-		?this.node.removeAttribute(a)
-		:this.node.setAttribute(a,b!=true&&b||'') }
-	on(){for(var a, x, i=0, n=this.node; a=arguments[i++];) for(x in a) n.addEventListener(x,a[x])}
+	at(a,b){var n=this.node;
+		(b===null || !b && n.hasAttribute(a))
+		?n.removeAttribute(a)
+		:n.setAttribute(a,b!=true&&b||'') }
+	cl(a,b){
+		var n = this.node.classList;
+		b===null ? n.remove(a) : n.toggle(a);
+		//get shim working if necessitated
+	}
 	innerIsInit(){}
 	INIT(){}
 	set init(a){this.INIT = a}
@@ -118,10 +137,13 @@ Element = %{
  }, 
 Build = %{
 	SuperNew(par, on){
-		function L(){ C.parse(ARGS, F); return L };
+		function L(){ $.parse(ARGS, F); return L };
 		if(!(n = par._build_)) (n=New(this)).parent = par;
-		var n, cb = n.Current, F=par.__factory__; L.$=n;
+		var n, cb = n.Current, F=par.__factory__, $=L.$=n;
 		if(F) Inherit(L,F);
+		L.parse = (a) => {
+			$.parse(a,F);
+		}
 		n.Current = %{
 			i:-1
 			node:on || par
@@ -264,28 +286,34 @@ window.dominator = function(opts){
 
 	var root = {}, Deps = New(Commands);
 		
-	function compile(f){
-		Insert() => { this.$.insert({pr:f,ag:ARGS}); return this; }
+	function compile(f, n){
+		Insert() => { this.$.insert({pr:f,ag:ARGS,nm:n||undefined}); return this; }
 		def(f, "__factory__", {value:Insert});
 		Inherit(Insert, Deps);
 		return Insert;
 	 }
 	function parse(f, n){
 		if(!f)return;
-		var t = New(Element); n isStr && (n=n.toLowerCase());
+		var t = New(Element);
+		if(n isStr) n=n.toLowerCase();
 		if(f isFun){
 			t.tagName = n;
 			t.INIT = f;
 		} else {
-			nEnum(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName"); n = nEnum(f,"ON");
+			//when element is set again, it ignores first id, then collides with existing id if same.
+			//This forces it into array mode because it thinks it's a dupe.
+			//fix.
+			nEnum(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName"); var on = nEnum(f,"ON");
 			t.INIT = nEnum(f,"DO")
-				? function(){ n && n.apply(this, arguments); this.DO(f.DO);     /*.apply(this, arguments);*/ }
-				: n || function(){};
+				? on
+					? function(){ on.apply(this, arguments); this.DO(f.DO);     /*.apply(this, arguments);*/ }
+				    : function(){ this.DO(f.DO); }
+				: on || function(){};
 			for(var x in f)
 				if(x[0]=="_") (t.$Atr||(t.$Atr={}))[x.substr(1)] = f[x]; 
 				else def(t,x,des(f,x))
 		}
-		return compile(t);
+		return compile(t, n);
 	 }
 	function link(f, C, X){
 		var x = parse(nEnum(f,"_"), X), y;
