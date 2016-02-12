@@ -51,39 +51,12 @@ nEnum(a,b) => a&&def(a,b,{enumerable:false})[b]
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
 Inherit = O.setPrototypeOf || ({__proto__:[]}) instanceof Array && function(o, p){ o.__proto__ = p; } || CloneForIn,
 Element = %{
-	// TO(adr, f){
-	// 	adr = adr.split('.'), i=0, C=this;
-	// 	if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
-	// 	while(adr[i]) if(!(C=C[adr[i++]])) throw new Error("Element '"+adr[i-1]+"' in '"+adr[i-2]+"' Not Found!");
-		
-	// 	function L(){ C.parse(ARGS, F); return L };
-	// 	var C = L.$ = Build.New(this), F=this.__factory__;
-
-	// 	F && Inherit(L,F);
-	// 	if(f isFun)//{ try{ 
-	// 		f.call(L,L)===L && L.$.Current.done(); 
-	// 	//} catch(x){ console.log(x) } }
-	// 	else{
-	// 		C.parse(ARGS,F)
-	// 		return L;
-	// 	}
-	// }
 	DO(f){
-		var C = Build.SuperNew(this), c = C.$.Current;
-		if(f isFun) f.call(c.node,C)===C && c.done(); //remember to put scope resolution on this. Transfer to supernew maybe?
-		else if(f) C.parse(ARGS);
-		return C;
+		var N = Build.New(this), C = N.$.Current;
+		if(f isFun) f.call(C.node,N)===N && C.done(); //remember to put scope resolution on this. Transfer to supernew maybe?
+		else if(f) N.parse(ARGS);
+		return N;
 	}
-	// DO(f){
-	// 	function L(){ C.parse(ARGS, F); return L };
-	// 	var C = L.$ = Build.New(this), F=this.__factory__;
-
-	// 	if(F) Inherit(L,F);
-	// 	if(f isFun)
-	// 		f.call(this,L)===L && L.$.Current.done();
-	// 	else
-	// 		return f ? Function.apply.call(L, this, arguments) : L; //f check is failsafe for empty intro element 
-	// }
 	USE(name, i){
 		if(name isNum) i=name; name = "V";
 		if((i = this[name = name+i]) isFun) this.DO(i);
@@ -136,7 +109,7 @@ Element = %{
 	get init(){ return (t,a)=>{ t.INIT.apply(t, [t].concat(a)) }}
  }, 
 Build = %{
-	SuperNew(par, on){
+	New(par, on){
 		function L(){ $.parse(ARGS, F); return L };
 		if(!(n = par._build_)) (n=New(this)).parent = par;
 		var n, cb = n.Current, F=par.__factory__, $=L.$=n;
@@ -152,18 +125,6 @@ Build = %{
 			}
 		};
 		return L;
-	 }
-	New(on){
-		if(!(n = on._build_)) (n=New(this)).parent = on;
-		var n, cb = n.Current;
-		n.Current = %{
-			i:-1
-			node:on
-			done:cb isFun ? cb : function(){
-				n.Current = cb;
-			}
-		};
-		return n;
 	 }
 	insert(def, x){
 		var t=this;
