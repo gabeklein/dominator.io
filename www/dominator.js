@@ -5,7 +5,13 @@ function cv(a, b, c) {
 ;
 (function () {
     function parseID(id, $) {
-        id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split(/(?=[:#\.@])/);
+        id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split('>');
+        if (id[1]) {
+            $.Outer = id[0];
+            id = id[1];
+        } else
+            id = id[0];
+        id = id.split(/(?=[:#\.@])/);
         if (!$.$Atr)
             $.$Atr = {};
         for (var i = 0, m, n, name; n = id[i++];) {
@@ -42,45 +48,22 @@ function cv(a, b, c) {
     function isArr(arr) {
         return arr && O.prototype.toString.call(arr) === '[object Array]';
     }
-    function nEnum(a, b) {
+    function Enum(a, b) {
         return a && def(a, b, { enumerable: false })[b];
     }
     var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, Inherit = O.setPrototypeOf || { __proto__: [] } instanceof Array && function (o, p) {
             o.__proto__ = p;
         } || CloneForIn, Element = {
-            // TO(adr, f){
-            // 	adr = adr.split('.'), i=0, C=this;
-            // 	if(!isNaN(adr[0])) C=C.up(parseInt(adr[i++]));
-            // 	while(adr[i]) if(!(C=C[adr[i++]])) throw new Error("Element '"+adr[i-1]+"' in '"+adr[i-2]+"' Not Found!");
-            // 	function L(){ C.parse(ARGS, F); return L };
-            // 	var C = L.$ = Build.New(this), F=this.__factory__;
-            // 	F && Inherit(L,F);
-            // 	if(f isFun)//{ try{ 
-            // 		f.call(L,L)===L && L.$.Current.done(); 
-            // 	//} catch(x){ console.log(x) } }
-            // 	else{
-            // 		C.parse(ARGS,F)
-            // 		return L;
-            // 	}
-            // }
-            DO: function (f) {
-                var C = Build.SuperNew(this), c = C.$.Current;
-                if (typeof f == 'function')
-                    f.call(c.node, C) === C && c.done();
-                else if (//remember to put scope resolution on this. Transfer to supernew maybe?
-                    f)
-                    C.parse(cv(arguments));
-                return C;
+            get DO() {
+                var N = Build.New(this), C = N.$.Current;
+                return function (f) {
+                    if (typeof f == 'function')
+                        f.call(C.node, N) === N && C.done();
+                    else if (f)
+                        N.parse(cv(arguments));
+                    return N;
+                };
             },
-            // DO(f){
-            // 	function L(){ C.parse(ARGS, F); return L };
-            // 	var C = L.$ = Build.New(this), F=this.__factory__;
-            // 	if(F) Inherit(L,F);
-            // 	if(f isFun)
-            // 		f.call(this,L)===L && L.$.Current.done();
-            // 	else
-            // 		return f ? Function.apply.call(L, this, arguments) : L; //f check is failsafe for empty intro element 
-            // }
             USE: function (name, i) {
                 if (typeof name == 'number')
                     i = name;
@@ -119,8 +102,6 @@ function cv(a, b, c) {
             OFF: function (a) {
                 this.node.removeEventListener(a, this.listeners[a]);
             },
-            del: function () {
-            },
             itr: function (n, f) {
                 for (var i = 0, l = []; i < n; i++)
                     l.push(f(i));
@@ -150,24 +131,13 @@ function cv(a, b, c) {
                 var n = this.node;
                 b === null || !b && n.hasAttribute(a) ? n.removeAttribute(a) : n.setAttribute(a, b != true && b || '');
             },
-            cl: function (a, b) {
-                var n = this.node.classList;
-                b === null ? n.remove(a) : n.toggle(a);
+            CS: function (a, b) {
+                this.node.classList[b === undefined && 'toggle' || b && 'add' || 'remove'](a);
             },
-            innerIsInit: function () {
-            },
-            INIT: function () {
-            },
-            set init(a) {
-                this.INIT = a;
-            },
-            get init() {
-                return function (t, a) {
-                    t.INIT.apply(t, [t].concat(a));
-                };
+            INIT: function ($, a) {
             }
         }, Build = {
-            SuperNew: function (par, on) {
+            New: function (par, on) {
                 function L() {
                     $.parse(cv(arguments), F);
                     return L;
@@ -175,7 +145,9 @@ function cv(a, b, c) {
                 ;
                 if (!(n = par._build_))
                     (n = New(this)).parent = par;
-                var n, cb = n.Current, F = par.__factory__, $ = L.$ = n;
+                var
+                    //do I get rid of _build_?
+                    n, cb = n.Current, F = par.__factory__, $ = L.$ = n;
                 if (F)
                     Inherit(L, F);
                 L.parse = function (a) {
@@ -190,25 +162,17 @@ function cv(a, b, c) {
                 };
                 return L;
             },
-            New: function (on) {
-                if (!(n = on._build_))
-                    (n = New(this)).parent = on;
-                var n, cb = n.Current;
-                n.Current = {
-                    i: -1,
-                    node: on,
-                    done: typeof cb == 'function' ? cb : function () {
-                        n.Current = cb;
-                    }
-                };
-                return n;
-            },
             insert: function (def$2, x) {
-                var t = this;
                 if (!def$2)
-                    return t.Current.i = x;
-                var Node, Type = def$2.pr, Elem = New(Type), Cur = t.next(Elem);
-                //, afterInit);
+                    return this.Current.i = x;
+                var t = this, Type = def$2.pr, Node = Type.Outer;
+                if (Node)
+                    t.parse([
+                        Node,
+                        1
+                    ]);
+                var //t.insert({pr:New(Element),nm:def.in,i:1});
+                    Elem = New(Type), Cur = t.next(Elem);
                 t.Current.i = def$2.i || 0;
                 if (def$2.nm)
                     t.is(def$2.nm);
@@ -223,14 +187,15 @@ function cv(a, b, c) {
                             Elem.node.classList.add(Node[x++]);
                     Cur.node.append(Elem);
                 }
-                Node = Type.init(Elem, def$2.ag);
+                Node = Type.INIT.apply(Elem, [Elem].concat(def$2.ag));
+                //.init(Elem, def.ag);
                 return Elem;
             },
             next: function (a, b) {
-                var t = this;
+                var t = this, c;
                 while (t.Current.i === 0)
                     t.Current.done();
-                var c = t.Current;
+                c = t.Current;
                 t.Current = !a ? {
                     i: -1,
                     node: c.node,
@@ -288,6 +253,8 @@ function cv(a, b, c) {
                     for (l = t.length; i < g; i++)
                         if (args[i].length != l)
                             Err('Input arrays not consistent');
+                    t = l;
+                    //weird.
                     x = args;
                 } else if (typeof t == 'number') {
                     if (g > 1)
@@ -381,7 +348,11 @@ function cv(a, b, c) {
         };
     window.dominator = function (opts) {
         var root = {}, Deps = New(Commands);
-        function compile(f, n) {
+        function namespace(Cdren, Arg) {
+            if (typeof Arg[0] == 'number' && Arg.length == 1) {
+            }
+        }
+        function factory(f, n) {
             function Insert() {
                 this.$.insert({
                     pr: f,
@@ -394,7 +365,7 @@ function cv(a, b, c) {
             Inherit(Insert, Deps);
             return Insert;
         }
-        function parse(f, n) {
+        function template(f, n) {
             if (!f)
                 return;
             var t = New(Element);
@@ -407,14 +378,14 @@ function cv(a, b, c) {
                 //when element is set again, it ignores first id, then collides with existing id if same.
                 //This forces it into array mode because it thinks it's a dupe.
                 //fix.
-                nEnum(f, 'ID') ? parseID(f.ID, t) : t.tagName = n || 'noName';
-                var on = nEnum(f, 'ON');
-                t.INIT = nEnum(f, 'DO') ? on ? function () {
-                    on.apply(this, arguments);
-                    this.DO(f.DO);
-                } : function () {
-                    this.DO(f.DO);
-                } : on || function () {
+                Enum(f, 'ID') ? parseID(f.ID, t) : t.tagName = n || 'noName';
+                var DO = Enum(f, 'DO'), ON = Enum(f, 'ON');
+                t.INIT = DO && ON ? function () {
+                    this.DO(DO);
+                    ON.apply(this, arguments);
+                } : DO && function () {
+                    this.DO(DO);
+                } || ON || function () {
                 };
                 for (var x in f)
                     if (x[0] == '_')
@@ -422,27 +393,39 @@ function cv(a, b, c) {
                     else
                         def(t, x, des(f, x));
             }
-            return compile(t, n);
+            return factory(t, n);
         }
-        function link(f, C, X) {
-            var x = parse(nEnum(f, '_'), X), y;
-            C[X] = C[X] ? x && CloneForIn(x, C[X], true) || C[X] : x || function throwNoFactory() {
-                Err('Element Class exists but has no constructor! Probably it is a namespace.');
-            };
-            for (x in f)
-                link((y = f[x])._ ? y : { _: y }, C[X], x);
+        function link(def$2, dir, name) {
+            if (!def$2._ && def$2.DO || def$2.ON)
+                def$2 = { _: def$2 };
+            var x = Enum(def$2, '_');
+            if (dir[name]) {
+                if (x) {
+                    CloneForIn(template(x, name), dir[name], true);
+                }
+            } else
+                dir[name] = x ? template(x, name) : function ns() {
+                    return namespace(ns, arguments);
+                };
+            for (x in def$2)
+                link(def$2[x], dir[name], x);
         }
-        function define(n, factory) {
-            for (var i = 0, x, C = root, y = (n = n.split('.')).pop(); x = n[i++];)
-                C = C[x] || (C[x] = function throwNoFactory() {
-                    Err('Element Class exists but has no constructor! Probably it is a namespace.');
-                });
-            link(typeof factory == 'function' || !factory ? { _: cv(arguments, 1) } : factory, C, y);
+        function define(name, definition) {
+            var cDir = root, y = (name = name.split('.')).pop();
+            for (var i = 0, x; x = name[i++];)
+                cDir = cDir[x];
+            /* || noNameSpace  */
+            link(typeof definition == 'function' || !definition ? { _: cv(arguments, 1) } : definition, cDir, y);
         }
         define.use = function (deps) {
+            if (typeof deps == 'string')
+                deps = [deps];
             for (var i = 0, x; x = deps[i]; i++)
                 CloneForIn(Deps, root[x]);
             return this;
+        };
+        define.wot = function () {
+            debugger;
         };
         define.start = function (name, target) {
             if (typeof (target && (name = root[name])) == 'function') {
@@ -456,10 +439,10 @@ function cv(a, b, c) {
                 });
                 e = New(e);
                 e.node = target;
-                e._build_ = Build.New(e);
+                e._build_ = Build.New(e).$;
                 for (name in target = e.$Atr)
                     e.at(name, target[name]);
-                e.init(e);
+                e.INIT.call(e);
             } else
                 Err('Wot m8? You have no element called that.');
         };
