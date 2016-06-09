@@ -26,7 +26,7 @@ function cv(a, b, c) {
             case '.':
                 ($.$Css || ($.$Css = [])).push(m);
                 break;
-            case ':':
+            case '&':
                 name = m;
                 $.tagName = $.tagName || m;
                 break;
@@ -48,8 +48,8 @@ function cv(a, b, c) {
     function isArr(arr) {
         return arr && O.prototype.toString.call(arr) === '[object Array]';
     }
-    function Enum(a, b) {
-        return a && def(a, b, { enumerable: false })[b];
+    function nin(a, b) {
+        return a && def(a, b, { ninerable: false })[b];
     }
     var O = Object, New = O.create, def = O.defineProperty, des = O.getOwnPropertyDescriptor, Inherit = O.setPrototypeOf || { __proto__: [] } instanceof Array && function (o, p) {
             o.__proto__ = p;
@@ -64,15 +64,15 @@ function cv(a, b, c) {
                     return N;
                 };
             },
-            USE: function (name, i) {
+            use: function (name, i) {
                 if (typeof name == 'number')
                     i = name;
                 name = 'V';
                 if (typeof (i = this[name = name + i]) == 'function')
                     this.DO(i);
             },
-            ON: function (one, arg) {
-                var a, x, t = this, n = t.node, i = 0, g = one == true ? arg : arguments, listen = one == true ? function (a$2, b) {
+            on: function (one, arg) {
+                var a, x, t = this, n = t.node, i = 0, g = one === true ? arg : arguments, listen = one == true ? function (a$2, b) {
                         function once(e) {
                             delete t.listeners[a$2];
                             b(e);
@@ -86,7 +86,7 @@ function cv(a, b, c) {
                     };
                 if (!t.listeners)
                     t.listeners = {};
-                for (; a = g[i];)
+                while (a = g[i])
                     if (typeof a == 'string') {
                         listen(a, g[i + 1]);
                         i += 2;
@@ -96,10 +96,10 @@ function cv(a, b, c) {
                             i++;
                         }
             },
-            ONE: function () {
-                this.ON(true, arguments);
+            one: function () {
+                this.on(true, arguments);
             },
-            OFF: function (a) {
+            off: function (a) {
                 this.node.removeEventListener(a, this.listeners[a]);
             },
             itr: function (n, f) {
@@ -131,7 +131,7 @@ function cv(a, b, c) {
                 var n = this.node;
                 b === null || !b && n.hasAttribute(a) ? n.removeAttribute(a) : n.setAttribute(a, b != true && b || '');
             },
-            CS: function (a, b) {
+            cl: function (a, b) {
                 this.node.classList[b === undefined && 'toggle' || b && 'add' || 'remove'](a);
             },
             INIT: function ($, a) {
@@ -145,9 +145,8 @@ function cv(a, b, c) {
                 ;
                 if (!(n = par._build_))
                     (n = New(this)).parent = par;
-                var
-                    //do I get rid of _build_?
-                    n, cb = n.Current, F = par.__factory__, $ = L.$ = n;
+                //do I get rid of _build_?
+                var n, cb = n.Current, F = par.__factory__, $ = L.$ = n;
                 if (F)
                     Inherit(L, F);
                 L.parse = function (a) {
@@ -171,8 +170,8 @@ function cv(a, b, c) {
                         Node,
                         1
                     ]);
-                var //t.insert({pr:New(Element),nm:def.in,i:1});
-                    Elem = New(Type), Cur = t.next(Elem);
+                //t.insert({pr:New(Element),nm:def.in,i:1});
+                var Elem = New(Type), Cur = t.next(Elem);
                 t.Current.i = def$2.i || 0;
                 if (def$2.nm)
                     t.is(def$2.nm);
@@ -350,7 +349,10 @@ function cv(a, b, c) {
         var root = {}, Deps = New(Commands);
         function namespace(Cdren, Arg) {
             if (typeof Arg[0] == 'number' && Arg.length == 1) {
-            }
+            }    // Insert() => { this.$.insert({pr:f,ag:ARGS,nm:n||undefined}); return this; }
+                 // def(f, "__factory__", {value:Insert});
+                 // Inherit(Insert, Deps);
+                 // return Insert;
         }
         function factory(f, n) {
             function Insert() {
@@ -365,57 +367,94 @@ function cv(a, b, c) {
             Inherit(Insert, Deps);
             return Insert;
         }
-        function template(f, n) {
-            if (!f)
-                return;
+        // function template(f, n){
+        //	if(!f)return;
+        //	var t = New(Element);
+        //	if(n isStr) n=n.toLowerCase();
+        //	if(f isFun){
+        //		t.tagName = n;
+        //		t.INIT = f;
+        //	} else {
+        //		//when element is set again, it ignores first id, then collides with existing id if same.
+        //		//This forces it into array mode because it thinks it's a dupe.
+        //		//fix.
+        //		nin(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName");
+        //		var DO = nin(f,"DO"), ON = nin(f,"ON");
+        //		t.INIT = DO && ON
+        //		  ? function(){ this.DO(DO); ON.apply(this, arguments) }
+        //		  : DO && function(){this.DO(DO)} || ON || function(){};
+        //		for(var x in f)
+        //			if(x[0]=="_") (t.$Atr||(t.$Atr={}))[x.substr(1)] = f[x]; 
+        //			else def(t,x,des(f,x))
+        //	}
+        //	return factory(t, n);
+        // }
+        //function link(def, dir, name){
+        //	if(!def._ && def.DO || def.ON) def = {_:def};
+        //	var x = nin(def,"_");
+        //	if(dir[name]){ if(x){
+        //		CloneForIn(template(x, name), dir[name], true) }}
+        //	else dir[name] = x 
+        //	  ? template(x, name)
+        //	  : function ns(){
+        //			return namespace(ns, arguments);
+        //		}
+        //	for(x in def) link(def[x], dir[name], x);
+        // }
+        function template(k, f, n) {
             var t = New(Element);
-            if (typeof n == 'string')
+            if (n)
                 n = n.toLowerCase();
-            if (typeof f == 'function') {
-                t.tagName = n;
-                t.INIT = f;
-            } else {
-                //when element is set again, it ignores first id, then collides with existing id if same.
-                //This forces it into array mode because it thinks it's a dupe.
-                //fix.
-                Enum(f, 'ID') ? parseID(f.ID, t) : t.tagName = n || 'noName';
-                var DO = Enum(f, 'DO'), ON = Enum(f, 'ON');
-                t.INIT = DO && ON ? function () {
-                    this.DO(DO);
-                    ON.apply(this, arguments);
-                } : DO && function () {
-                    this.DO(DO);
-                } || ON || function () {
-                };
-                for (var x in f)
-                    if (x[0] == '_')
-                        (t.$Atr || (t.$Atr = {}))[x.substr(1)] = f[x];
-                    else
-                        def(t, x, des(f, x));
-            }
+            //when element is set again, it ignores first id, then collides with existing id if same.
+            k.ID ? parseID(k.ID, t) : t.tagName = n || 'div';
+            //do I need parenthesis?
+            var Do = k.DO, On = k.ON;
+            t.INIT = Do && On ? function () {
+                this.DO(Do);
+                On.apply(this, arguments);
+            } : Do && function () {
+                this.DO(Do);
+            } || On || function () {
+            };
+            if (k.IN)
+                t.IN = k.IN;
+            var $O, $D;
+            for (var x in f)
+                if (x[0] == '_')
+                    (typeof f[x] == 'string' ? $O || ($O = t.$Atr = {}) : typeof f[x] == 'function' ? $D || ($D = t.$Do = {}) : {})[x.substr(1)] = f[x];
+                else
+                    def(t, x, des(f, x));
             return factory(t, n);
         }
         function link(def$2, dir, name) {
-            if (!def$2._ && def$2.DO || def$2.ON)
-                def$2 = { _: def$2 };
-            var x = Enum(def$2, '_');
-            if (dir[name]) {
-                if (x) {
-                    CloneForIn(template(x, name), dir[name], true);
+            var w, y, x = dir[name], self = {}, memb = {}, keys = {}, a = 0;
+            if (typeof def$2 == 'function')
+                keys.DO = def$2;
+            else
+                for (y in def$2) {
+                    if (/^[a-z_]/.test(y)) {
+                        a++;
+                        self[y] = def$2[y];
+                    } else if (/DO|ON|ID|IN/.test(y)) {
+                        a++;
+                        keys[y] = def$2[y];
+                    } else
+                        memb[y] = def$2[y];
                 }
-            } else
-                dir[name] = x ? template(x, name) : function ns() {
-                    return namespace(ns, arguments);
-                };
-            for (x in def$2)
-                link(def$2[x], dir[name], x);
+            a = a && template(keys, self, name);
+            x = dir[name] = x ? a && CloneForIn(a, x, true) && a : a || function ns() {
+                return namespace(ns, arguments);
+            };
+            for (y in memb)
+                link(memb[y], dir[name], y);
         }
-        function define(name, definition) {
-            var cDir = root, y = (name = name.split('.')).pop();
+        function define(name, def$2) {
+            if (!def$2)
+                throw new Error('No definition; we need a definition!');
+            var cd = root, y = (name = name.split('.')).pop();
             for (var i = 0, x; x = name[i++];)
-                cDir = cDir[x];
-            /* || noNameSpace  */
-            link(typeof definition == 'function' || !definition ? { _: cv(arguments, 1) } : definition, cDir, y);
+                cd = cd[x];
+            link(def$2, cd, y);
         }
         define.use = function (deps) {
             if (typeof deps == 'string')
@@ -423,9 +462,6 @@ function cv(a, b, c) {
             for (var i = 0, x; x = deps[i]; i++)
                 CloneForIn(Deps, root[x]);
             return this;
-        };
-        define.wot = function () {
-            debugger;
         };
         define.start = function (name, target) {
             if (typeof (target && (name = root[name])) == 'function') {

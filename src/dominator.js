@@ -1,22 +1,3 @@
-macro ARGS{
-	rule{($n:expr (,) ...)} => {cv(arguments, $n (,) ...)}
-	rule{} => {cv(arguments)}
- }
-let gets = macro{
-	case infix{
-		$obj:ident | gets $name:ident{$body ...}
-	} => {
-		letstx $accessor = [makeValue(unwrapSyntax(#{$name}), #{here})];
-		return #{ def($obj, $accessor, {get:function(){$body ...}}) }
-	}
-	case infix{
-		$obj:ident | gets $name:ident($args (,) ...){$body ...}
-	} => {
-		letstx $accessor = [makeValue(unwrapSyntax(#{$name}), #{here})];
-		return #{ def($obj, $accessor, {get:function($args (,) ...){$body ...}}) }
-	}
- }
-
 "use strict"; 
 
 cv(a,b,c) => [].slice.call(a,b,c);
@@ -34,7 +15,7 @@ parseID(id,$) => {
             case "@": $.$Atr[m]=0; break;
             case "#": $.$Atr.id=m; break;
             case ".": ($.$Css||($.$Css=[])).push(m); break;
-            case ":": name=m; $.tagName=$.tagName||m; break;
+            case "&": name=m; $.tagName=$.tagName||m; break;
             default : $.tagName=n;
         }
     }
@@ -47,7 +28,7 @@ CloneForIn(to, from, shallow) => {
  }
 Err(err) => {throw new Error(err)}
 isArr(arr) => arr && O.prototype.toString.call( arr ) === '[object Array]'
-Enum(a,b) => a&&def(a,b,{enumerable:false})[b]
+nin(a,b) => a&&def(a,b,{ninerable:false})[b]
 
 
 var O=Object, New=O.create, def=O.defineProperty, des=O.getOwnPropertyDescriptor,
@@ -67,12 +48,12 @@ Element = %{
 			return N;
 		};
 	}
-	USE(name, i){
+	use(name, i){
 		if(name isNum) i=name; name = "V";
 		if((i = this[name = name+i]) isFun) this.DO(i);
 	}
-	ON(one, arg){
-		var a, x, t=this, n=t.node, i=0, g=one==true?arg:arguments,
+	on(one, arg){
+		var a, x, t=this, n=t.node, i=0, g=one===true?arg:arguments,
 			listen = one==true ? (a,b) => {
 				once(e)=>{
 					delete t.listeners[a];
@@ -85,12 +66,12 @@ Element = %{
 				n.addEventListener(a, b);
 			};
 		if(!t.listeners) t.listeners = {};
-		for (;a = g[i];)
+		while (a = g[i])
 		    if(a isStr){ listen(a, g[i+1]); i+=2}
 		    else for(x in a){ listen(x, a[x]); i++ }
 	}
-	ONE(){ this.ON(true, arguments) }
-	OFF(a){ this.node.removeEventListener(a,this.listeners[a]) }
+	one(){ this.on(true, arguments) }
+	off(a){ this.node.removeEventListener(a,this.listeners[a]) }
 	itr(n, f){
         for(var i = 0, l = []; i < n; i++)
             l.push(f(i));
@@ -107,7 +88,7 @@ Element = %{
 		(b===null || !b && n.hasAttribute(a))
 		?n.removeAttribute(a)
 		:n.setAttribute(a,b!=true&&b||'') }
-	CS(a,b){
+	cl(a,b){
 		this.node.classList[ b === undefined && "toggle" || b && "add" || "remove"](a);
 		//get shim working if necessitated
 	}
@@ -253,9 +234,6 @@ window.dominator = function(opts){
 	var root = {}, Deps = New(Commands);
 	function namespace(Cdren, Arg){
 		if(Arg[0] isNum && Arg.length == 1){
-
-
-
 			// Insert() => { this.$.insert({pr:f,ag:ARGS,nm:n||undefined}); return this; }
 			// def(f, "__factory__", {value:Insert});
 			// Inherit(Insert, Deps);
@@ -268,51 +246,80 @@ window.dominator = function(opts){
 		Inherit(Insert, Deps);
 		return Insert;
 	 }
-	function template(f, n){
-		if(!f)return;
+	// function template(f, n){
+	 //	if(!f)return;
+	 //	var t = New(Element);
+	 //	if(n isStr) n=n.toLowerCase();
+	 //	if(f isFun){
+	 //		t.tagName = n;
+	 //		t.INIT = f;
+	 //	} else {
+	 //		//when element is set again, it ignores first id, then collides with existing id if same.
+	 //		//This forces it into array mode because it thinks it's a dupe.
+	 //		//fix.
+	 //		nin(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName");
+	 //		var DO = nin(f,"DO"), ON = nin(f,"ON");
+	 //		t.INIT = DO && ON
+	 //		  ? function(){ this.DO(DO); ON.apply(this, arguments) }
+	 //		  : DO && function(){this.DO(DO)} || ON || function(){};
+	 //		for(var x in f)
+	 //			if(x[0]=="_") (t.$Atr||(t.$Atr={}))[x.substr(1)] = f[x]; 
+	 //			else def(t,x,des(f,x))
+	 //	}
+	 //	return factory(t, n);
+	 // }
+	 //function link(def, dir, name){
+	 //	if(!def._ && def.DO || def.ON) def = {_:def};
+	 //	var x = nin(def,"_");
+	 //	if(dir[name]){ if(x){
+	 //		CloneForIn(template(x, name), dir[name], true) }}
+	 //	else dir[name] = x 
+	 //	  ? template(x, name)
+	 //	  : function ns(){
+	 //			return namespace(ns, arguments);
+	 //		}
+	 //	for(x in def) link(def[x], dir[name], x);
+	 // }
+	function template(k, f, n){
 		var t = New(Element);
-		if(n isStr) n=n.toLowerCase();
-		if(f isFun){
-			t.tagName = n;
-			t.INIT = f;
-		} else {
-			//when element is set again, it ignores first id, then collides with existing id if same.
-			//This forces it into array mode because it thinks it's a dupe.
-			//fix.
-			Enum(f,"ID") ? parseID(f.ID,t) : (t.tagName = n || "noName");
-			var DO = Enum(f,"DO"), ON = Enum(f,"ON");
-			t.INIT = DO && ON
-			  ? function(){ this.DO(DO); ON.apply(this, arguments) }
-			  : DO && function(){this.DO(DO)} || ON || function(){};
-			for(var x in f)
-				if(x[0]=="_") (t.$Atr||(t.$Atr={}))[x.substr(1)] = f[x]; 
-				else def(t,x,des(f,x))
-		}
+		if(n)n=n.toLowerCase();
+		//when element is set again, it ignores first id, then collides with existing id if same.
+		k.ID ? parseID(k.ID,t) : (t.tagName = n || "div"); //do I need parenthesis?
+		var Do = k.DO, On = k.ON;
+		t.INIT = Do && On
+		  ? function(){ this.DO(Do); On.apply(this, arguments) }
+		  : Do && function(){this.DO(Do)} || On || function(){};
+		if(k.IN) t.IN = k.IN; var $O, $D;
+		for(var x in f)
+			if(x[0]=="_")(f[x] isStr ? $O||($O=t.$Atr={}) : f[x] isFun ? $D||($D=t.$Do={}) : {} )[x.substr(1)] = f[x];
+			else def(t,x,des(f,x))
 		return factory(t, n);
-	 }
+	}
 	function link(def, dir, name){
-		if(!def._ && def.DO || def.ON) def = {_:def};
-		var x = Enum(def,"_");
-		if(dir[name]){ if(x){
-			CloneForIn(template(x, name), dir[name], true) }}
-		else dir[name] = x 
-		  ? template(x, name)
-		  : function ns(){
-				return namespace(ns, arguments);
-			}
-		for(x in def) link(def[x], dir[name], x);
+	 	var w, y, x=dir[name], self={}, memb={}, keys={}, a=0;
+	 	if(def isFun) keys.DO = def;
+	 	else for(y in def){
+	 		if(/^[a-z_]/.test(y)){a++; self[y]=def[y]}
+	 		else if(/DO|ON|ID|IN/.test(y)){a++; keys[y]=def[y]}
+	 		else memb[y]=def[y];
+		 }
+		a=a&&template(keys, self, name);
+	 	x = dir[name] = 
+		 	x ? a && CloneForIn(a, x, true) && a
+		 	  : a || function ns(){ return namespace(ns, arguments) };
+	 	for(y in memb) link(memb[y], dir[name], y);
 	 }
-	function define(name, definition){
-		var cDir=root, y=(name=name.split('.')).pop();
-		for(var i=0, x; x=name[i++];) cDir=cDir[x];  /* || noNameSpace  */
-		link(definition isFun || !definition ? {_:ARGS(1)} : definition, cDir, y);
+	function define(name, def){
+		if(!def) throw new Error("No definition; we need a definition!")
+		var cd=root, y=(name=name.split('.')).pop();
+		for(var i=0, x; x=name[i++];) cd=cd[x];
+		link(def, cd, y);
 	 }
 	define.use = (deps) => {
 		if(deps isStr) deps=[deps];
 		for(var i=0, x; x=deps[i]; i++) CloneForIn(Deps, root[x]);
 		return this;
 	 }
-	define.wot = ()=>{debugger;};
 	define.start = (name, target) => {
 		if(target && (name = root[name]) isFun){
 			var e;

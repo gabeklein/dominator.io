@@ -1,68 +1,4 @@
-macro _member{
-	rule{ $name:ident($arg:ident (,) ...){ $body ...}
-	}=>{  $name($arg (,) ...){ $body ...}
-	}
 
-	rule{ $name:ident($arg:ident (,) ...) => $exp:expr; 
-	}=>{  $name($arg (,) ...) { return $exp } 
-	}
-}
-
-macro log{
-	rule{$x:expr} => {console.log($x)}
-}
-
-macro args{
-	rule{ ($arg:ident (,) ...) }
-}
-
-macro member{
-
-	rule{ $name:ident $a:args { $body ... }
-	}=>{  $name : function $a { $body ...}
-	}
-
-	rule{ $name:ident $a:args $exp:expr;
-	}=>{  $name : function $a { $exp } 
-	}
-
-	rule{ $name:ident $a:args => $exp:expr
-	}=>{  $name : function $a { return $exp } 
-	}
-
-	rule{ $name:ident : $value:expr } => { $name:$value }
-
-	rule{ set $m:_member } => { set $m }
-	rule{ get $m:_member } => { get $m }
-
-}
-
-macro => {
-  rule infix { $[&]() | {$body ...} } => {
-       (function() { $body ...  } ) ()
-  }
-  rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | {$body ...} } => {
-       (function($arg (,) ...) { $body ...  } ) ($val (,) ...)
-  }
-  rule infix { $[&]() | $body:expr } => {
-       (function() { return $body } ) ()
-  }
-  rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $body:expr } => {
-       (function($arg (,) ...) { return $body } ) ($val (,) ...)
-  }
-  rule infix { ($arg (,) ...) | {$body ...} } => {
-      function($arg (,) ...) { $body ...  }
-  }
-  rule infix { ($arg (,) ...) | $exp:expr } => {
-      function($arg (,) ...) { return $exp }
-  }
-  rule infix { $n($arg (,) ...) | {$body ...} } => {
-      function $n($arg (,) ...) { $body ...  }
-  }
-  rule infix { $n($arg (,) ...) | $exp:expr } => {
-      function $n($arg (,) ...) { return $exp }
-  }
-}
 
 macro bind {
 	case { _ $id:ident() } => {
@@ -79,13 +15,10 @@ macro bind {
 	}
  }
 
-macro isStr{rule infix{ $d:expr |} => {typeof $d=="string"}}/**/
-macro isFun{rule infix{ $d:expr |} => {typeof $d=="function"}}
-macro isObj{rule infix{ $d:expr |} => {typeof $d=="object"}}
-macro isNum{rule infix{ $d:expr |} => {typeof $d=="number"}}
-macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
+//1702
 
-macro dom{
+
+macro def{
 	case { _ $id:ns_method $cls:dom_cls } => {
 		for(var x=#{$id}, lol = "", i=x.length; i--;) lol = x[i].token.value + lol;
 		letstx $path = [makeValue(lol, #{here})];
@@ -100,36 +33,118 @@ macro ns_prop {
   rule { }
  }
 
-let % = macro{
-	rule{ {$m:member ...} } => {{$m (,) ...}}
-	rule{ $n $c:% } => {$n = $c}
-	rule infix{ $x:expr | $y:expr } => { $x % $y }
- }
+
 macro dom_cls{
-	rule{ { $($name:cls_name $body:cls_memb) ... } }=>{ { $($name : $body) (,) ... } }
+	rule{ $n:ident $b:dom_cls }=>{ $n : $b }
+	rule{ { $m:cls_memb ... } }=>{ { $m (,) ... } }
  }
-macro cls_name{
-	rule{ self } => { _ }
-	rule{ $x:ident } => { $x }
- }
-macro cls_memb{
-	rule{ $wtf:% } => { $wtf }
-	rule{ {$m:member ...} } => { {$m (,) ...} }
-	rule{ $cls:dom_cls ... } => { $cls (,) ... }
-	rule{ ($args:ident (,) ...){$body ...} } => { function($args (,) ...){$body ...} }
- }
+macro do_delim{
+	rule{;}
+	rule{-}
+	rule{end}
+}
+// // macro do{
+// // 	rule do
+// // }
+// // macro inline_do{
+// // 	rule{:}
+// // }
+// macro cls_memb{
+
+// 	rule{this{ $a ... do: $v:element ... ; $b ...}} => {ON:function(){ $a ... ;this.DO  $v ... .END; $b ...}}
+// 	rule{this: $v:element ... ;} => {DO:function(_){return _ $v ...}}
+
+// 	//rule{return{  }} => {DO:function(_){return _ $v ...}}
 
 
 
-export dom
-export %
-export isStr
-export isFun
-export isObj
-export isNum
-export isBool
-export OBJ
-export when
-export bind
-export contains
-export =>
+
+// 	rule{ $n:ident{ $m:cls_memb ... } }=>{ $n : { $m (,) ... } }
+// 	rule{$x:member}
+//  }
+// macro element{
+// 	case{_ $e:e_type > $x:element} => {
+// 		// return #{element $e : $x;}
+// 		var e = #{$e};
+// 		e[e.length-1].token.inner.push(makePunc(',', #{here}), makeValue(1,#{here}))
+// 		letstx $n = e;
+// 		return #{$n $x}
+// 	}
+// 	case{_ $e:e_type : $x:element ... ;} => {
+// 		var i = #{($x) ...}.length, e = #{$e};
+// 		e[e.length-1].token.inner.push(makePunc(',', #{here}), makeValue(i,#{here}))
+// 		letstx $n = e;
+// 		return #{$n $x ...}
+// 	}
+// 	rule{$e:e_type} => {$e}
+//  }
+
+	macro e_token{
+		rule{&}
+		rule{#}
+		rule{.}
+		rule{@}
+	}
+	// macro e_name{
+	// 	rule { $x:ident $r:e_atr}
+	// 	rule { &$x:ident $r:e_atr}
+	//  }
+	// macro e_atr{
+	// 	case {$x:e_token $y:ident $r:e_atr} => {
+	// 		letstx $wat = [makeValue(unwrapSyntax($x) + unwrapSyntax($y) + unwrapSyntax($r), #{here})];
+	// 		return #{$wat}
+	// 	}
+	// 	rule {}
+	//  }
+
+macro e_thing{
+	rule{$x:lit}
+	rule{$x:ident}
+}
+
+macro e_type{
+	rule{ $name:ident ($x:e_args) } => { .$name $x }
+	case{ _ $name:e_thing [$x:e_args] } => {
+		var x = #{$x}, i=unwrapSyntax(x).inner, a=[makeValue(unwrapSyntax(#{$name}), #{here})];
+		if(i.length) a.push(makePunc(',', #{here}));
+		[].unshift.apply(i, a);
+		letstx $n = x;
+		return #{ $n } 
+	 }
+	case{ _ $name:e_thing } => {
+		for(var x=#{$name}, lol = "", i=x.length; i--;) lol = x[i].token.value + lol;
+		letstx $atrs = [makeValue(lol, #{here})];
+		return #{($atrs)}
+	 }
+ }
+// macro e_args{
+// 	case{ _ $a:e_arg (,) ... } => {
+// 		var a = #{$a ...}, b, f=[];
+// 		for(var i=0, j, p=[].push, c=makePunc(",", #{here}); j=a[i++];){
+// 			if(j.token.value=="{}"){
+// 				if(b) b.push(c); 
+// 				else  f.push(c, makeDelim("{}", b=[], #{here}));
+// 				p.apply(b, j.token.inner)
+// 			} else {
+// 				f.push(c, j);
+// 			}
+// 		}
+// 		letstx $wat = [makeDelim("()", f.slice(1), #{here})];
+// 		return #{ $wat }
+// 	}
+//  }
+// macro e_arg {
+// 	rule{$a:ident : $b:expr} => { {$a : $b} }
+// 	rule{$d:expr} => {$d}
+//  }
+
+//export e_atr
+//export log
+
+// export dom_cls
+// export def
+
+// export OBJ
+// export when
+// export bind
+// export contains
