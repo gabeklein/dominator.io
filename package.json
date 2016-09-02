@@ -1,18 +1,26 @@
 {
   "name": "dominator.io",
-  "version": "0.0.1",
+  "version": "0.3.2",
   "author": "Gabe Klein",
-  "keywords": [ "dominator", "mvc" ],
+  "keywords": [
+    "dominator",
+    "mvc"
+  ],
+  "main":"build/dominator.js",
   "description": "Cool library that's cool.",
   "homepage": "https://bitbucket.org/TERMtm/dominator.io#readme",
-  "repository": { "type": "git", "url": "git+ssh://git@bitbucket.org/TERMtm/dominator.io.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/TERMtm/dominator.io.git"
+  },
   "license": "ISC",
   "devDependencies": {
-    "sass":                "0.5.0",
-    "sweet.js":            "0.7.0",
-    "grunt":               "0.4.1",
-    "grunt-sass":          "1.2.0",
-    "grunt-sweet.js":      "0.1.5",
-    "grunt-contrib-watch": "1.0.0"
+    "grunt": "0.4.1",
+    "grunt-contrib-watch": "1.0.0",
+    "grunt-replace": "^1.0.1",
+    "grunt-sass": "1.2.0",
+    "grunt-sweet.js": "0.1.5",
+    "sass": "0.5.0",
+    "sweet.js": "0.7.0"
   }
 }

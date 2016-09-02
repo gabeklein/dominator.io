@@ -9,34 +9,25 @@ module.exports = function(grunt) {
             },
             compile:{
                 src: 'src/*.js',
-                dest: 'www/'
+                dest: 'build/'
             }
         },
+        replace: { dist: {
+          options: {
+            patterns: [ { match: /\$\d+/g, replacement: '' } ]
+          },
+          files: [ {src: ['build/dominator.js'], dest: './'} ]
+        }},
         watch:{
            options: {
                nospawn: true
            },
            sweetjs: {
                files: ['src/*.js'],
-               tasks: ['sweetjs:compile']
+               tasks: ['sweetjs:compile', 'replace:dist']
            }
         }
     })
-
-    // grunt.initConfig({ 
-    //     sweetjs: {
-    //         options: {
-    //             readableNames: true,
-    //             modules: ["/Users/termtm/Projects/Dominator.io/macros/dominator.sjs"],
-    //             sourceMap: false
-    //         },
-    //         compile:{
-    //             src: 'src/*.js',
-    //             dest: 'www/'
-    //         }
-    //     },
-    //    
-    // });
 
     grunt.event.on('watch', function(action, filepath, target) {
         if(action == 'changed' && target == 'sweetjs') {
@@ -48,6 +39,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-sweet.js');
+    grunt.loadNpmTasks('grunt-replace');
 
-    grunt.registerTask('default', ['sweetjs']);
+    grunt.registerTask('default', ['sweetjs', 'replace']);
 };

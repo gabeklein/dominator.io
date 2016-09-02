@@ -5,33 +5,32 @@ macro isNum{ rule infix{ $d:expr |} => {typeof $d=="number"}}
 macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
 
 macro => {
-	rule infix { $[&]() | {$body ...} } => {
-	   (function() { $body ...  } ) ()
+	rule infix { $[&]() | $n:ident $b:body } => {
+	   (function $n() $b ) ()
 	}
-	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | {$body ...} } => {
-	   (function($arg (,) ...) { $body ...  } ) ($val (,) ...)
+	rule infix { $[&]() | $b:body } => {
+	   (function() $b ) ()
 	}
-	rule infix { $[&]() | $body:expr } => {
-	   (function() { return $body } ) ()
+	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $n:ident $b:body } => {
+	   (function $n($arg (,) ...) $b ) ($val (,) ...)
 	}
-	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $body:expr } => {
-	   (function($arg (,) ...) { return $body } ) ($val (,) ...)
+	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $b:body } => {
+	   (function($arg (,) ...) $b ) ($val (,) ...)
 	}
-	rule infix { ($arg (,) ...) | {$body ...} } => {
-	  function($arg (,) ...) { $body ...  }
+	rule infix { $args | $b:body } => {
+	  function $args $b
 	}
-	rule infix { ($arg (,) ...) | $exp:expr } => {
-	  function($arg (,) ...) { return $exp }
-	}
-	rule infix { $n($arg (,) ...) | {$body ...} } => {
-	  function $n($arg (,) ...) { $body ...  }
-	}
-	rule infix { $n($arg (,) ...) | $exp:expr } => {
-	  function $n($arg (,) ...) { return $exp }
+	rule infix { $n $args | $b:body } => {
+	  function $n $args $b
 	}
  }
 
- macro ARGS{
+macro body{
+	rule{ {$body ...} } 
+	rule{ $body:expr } => {{return $body}}
+}
+
+ macro __args {
  	rule{($n:expr (,) ...)} => {cv(arguments, $n (,) ...)}
  	rule{} => {cv(arguments)}
   }
@@ -48,34 +47,22 @@ macro args{
 
 macro member{
 
-	rule{ $name:ident $a:args { $body ... }      
-	}=>{  $name : function $a { $body ... }
-	}
+	rule{ $nm:ident $ag:args $by:body }
+	  =>{ $nm : function $ag $by }
 
-	rule{ $name:ident $a:args $exp:expr;       
-	}=>{  $name : function $a { $exp } 
-	}
+	rule{ $gs:accessor $nm:ident $ag:args $by:body }
+	  =>{ $gs $nm $ag $by }
 
-	rule{ $name:ident $a:args => $exp:expr     
-	}=>{  $name : function $a { return $exp } 
-	}
+	rule{ $name:ident : $value:expr }
 
-	rule{ $name:ident : $value:expr } => { $name:$value }
-
-	rule{ set $m:_member } => { set $m }
-	rule{ get $m:_member } => { get $m }
+	rule{ $id:ident[$cell (,) ...] } => {$id : [$cell (,) ...]}
 
 }
 
-macro _member{
-	rule{ $name:ident($arg:ident (,) ...){ $body ...}
-	}=>{  $name($arg (,) ...){ $body ...}
-	}
-
-	rule{ $name:ident($arg:ident (,) ...) => $exp:expr; 
-	}=>{  $name($arg (,) ...) { return $exp } 
-	}
- }
+macro accessor{
+	rule{get}
+	rule{set}
+}
 
  let gets = macro{
  	case infix{
@@ -91,7 +78,7 @@ macro _member{
  	rule{}
  }
 
-export ARGS
+export __args
 export gets
 export isStr
 export isFun
