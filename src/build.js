@@ -1,4 +1,4 @@
-var Build = %{
+var Build = window.lol = %{
 	New(parent, on){
 		function A(){ B.interp(__args, F); return A };
 		var B = A.$ = parent.__build__ || New(this, {parent: {value: parent}}),
@@ -135,17 +135,18 @@ var Build = %{
 			delete this.insert;
 		}
 	}
-	parse(id, $){
+	parse(id){
 		var meta = {atr:{},css:[]};
-		id=id.toLowerCase().replace(/ /g,"").split(">");
-		id = (id[1] ? meta.wrap = id[0] && id[1] : id[0]).split(/(?=[:#&.@])/);
-		for(var i=0, m, n, name; n=id[i++];){
+		if((id=id.split(">")).length > 1) return id.map(this.parse);
+		else id=id[0].toLowerCase().replace(/ /g,"").split(/(?=[\[:#&.@~^])/);
+		for(var i=id.length, m, n, name; n=id[--i];){
 			m=n.slice(1);
 			switch(n[0]){
-				case "@": meta.atr[m]=0; break;
-				case "#": meta.atr.id=m; break;
 				case ".": meta.css.push(m); break;
-				case "&": meta.name=m; meta.tag=meta.tag||m; break;
+				case "#": meta.atr.id=m; break;
+				case "@": m.split(',').map((a)=>{ meta.atr[a]=0 }) break;
+				case "[": meta.index=Number.parseInt(m.slice(0, -1)); break;
+				case "&": meta.name=m; meta.tag=m; break;
 				default : meta.tag=n;
 			}
 		}
@@ -155,9 +156,9 @@ var Build = %{
 		if(Object.meta(meta)==0) return 0;
 		def(self, "INIT", { value: (args) => {
 			var n, i, o;
-			for(n in meta.atrs) this.at(n, atrs[n])
-			for(n=meta.css, i=n.length; i-- > 0;) this.cl(n[i])
-			if(meta.ON) var O = meta.ON.apply(this, arguments) || null;
+			for(n in meta.atrs) this.at(n, atrs[n]);
+			for(n=meta.css, i=n.length; i > 0;) this.cl(n[--i]);
+			if(meta.ON) var args = meta.ON.apply(this, arguments) || null;
 			if(meta.DO){
 				var build = Build.New(this);
 				meta.DO.apply(build.$.Current.node, [build].concat[args || []])
@@ -175,7 +176,7 @@ var Build = %{
 		if( (a=A[i]) isStr ){i++; $.$Text=a}
 		if( (a=A[i]) isObj ){i++; for(b in a) keys.atrs[b] = a[b]}
 		if( (a=A[i]) isNum ){i++; meta.nChild=a}
-		if( (a=A[i]) isFun ){i++; $.INIT=a} //CHANGE TO DO
+		// if( (a=A[i]) isFun ){i++; $.INIT=a} //CHANGE TO DO
 
 		if(parentFactory) $.__factory__ = parentFactory;
 

@@ -12,23 +12,26 @@ var Factory = function(opts){
 		link(def, cd, name);
 	}
 	link(def, dir, name) => {
-		var tree = destruct(def),
-			spawner = tree.root;
-		if(!dir && (spawner || Err("Cannot register an element with no properties!")));
+		var tree = interpret(def, callName),
+			self = tree.root;
+		if(!dir && (self || Err("Cannot register an element with no properties!")));
 		else {
 			var existing = dir[name];
-			spawner = (existing && spawner)
-			? CloneForIn(spawner, existing, true)
-			: existing || spawner || Err("Cannot insert");
+			self = (existing && self)
+			? CloneForIn(self, existing, true)
+			: existing || self || Err("Cannot insert nothing.");
 		}
 		for(x in membs) link(membs[x], a, x);
 		return a;
 	}
-	destruct(def) => {
+	interpret(def, callName) => {
 		var temp = New(Element), tree = {}, meta={};
-		if(def isFun) meta.DO = def;
+		if(def isFun){
+			meta.DO = def;
+			meta.name = callName;
+		}
 		else {
-			if(x = noemum(def, "ID")) meta = Build.parse(x);
+			if(x = noemum(def, "ID")) meta = Build.parse(x, callName);
 			for(var x in def){
 				if(isProperty.test(y)) temp[y]=def[y];
 				else if(isKey.test(y)) meta[y]=def[y];
