@@ -4,10 +4,6 @@ var Factory = function(opts){
 		isKey = /DO|ON|ID|IN/,
 		isProperty = /^[a-z]/;
 
-	namespace(ns) => {
-		Err("namespace not yet implemented!");
-		return function(){}
-	}
 	//reimplement by returning to nLevel recursively
 	define(path, def) => {
 		if(!def) throw new Error("No definition; we need a definition!")
@@ -17,12 +13,14 @@ var Factory = function(opts){
 	}
 	link(def, dir, name) => {
 		var tree = destruct(def),
-			existing = dir[name],
 			spawner = tree.root;
 		if(!dir && (spawner || Err("Cannot register an element with no properties!")));
-		else spawner = (existing && spawner)
+		else {
+			var existing = dir[name];
+			spawner = (existing && spawner)
 			? CloneForIn(spawner, existing, true)
-			: existing || spawner || namespace();
+			: existing || spawner || Err("Cannot insert");
+		}
 		for(x in membs) link(membs[x], a, x);
 		return a;
 	}
@@ -45,14 +43,6 @@ var Factory = function(opts){
 			Build.setup(root, meta)
 		});
 	}
-	// template(ptype, name) => {
-	// 	name=name.toLowerCase();
-	// 	//bug: when element is set again, it ignores first id, then collides with existing id if same.
-	// 	if(k.ID) Build.parse(k.ID, ptype)
-	// 	else ptype.tagName = name || "div";
-	// 	return factory(prototype, name);
-	// }
-
 	factory(f, name) => {
 		name = name || undefined; //idk actually
 		Insert() => { this.$.insert({pr:f, ag:__args, nm:name}); return this; }
@@ -60,15 +50,11 @@ var Factory = function(opts){
 		Inherit(Insert, Deps);
 		return Insert;
 	}
-	define.use = (deps) => {
-		if(deps isStr) deps=[deps];
-		for(var i=0, x; x=deps[i]; i++) CloneForIn(Deps, root[x]);
-		return this;
-	}
-	define.startOnLoad = (control) => {
+	define.startOnLoad = (control, callback) => {
 		window.onload = () => {
 			if(!document || !document.body) Err("`document.body` not found! Is this a browser enviroment?")
-			define.start(control, document.body)
+			define.start(control, document.body);
+			callback()
 		}
 	}
 	define.start = (control, target) => {
