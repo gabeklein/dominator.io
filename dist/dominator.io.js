@@ -1,10 +1,20 @@
-(function () {
-    function CloneForIn(to, from, shallow) {
-        // !Incomplete Implmentation
-        for (var key in from)
-            if (!shallow || O.hasOwnProperty(from, key))
-                O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
-        return to;
+(function (root, mod) {
+    'use strict';
+    if (typeof define === 'function' && define.amd)
+        define([], mod);
+    else if (typeof module === 'object' && module.exports)
+        module.exports = mod();
+    else
+        root.dom = mod();
+}(this, function () {
+    function isArr(arr) {
+        arr && Object.prototype.toString.call(arr) === '[object Array]';
+    }
+    function noenum(a, b) {
+        a && def(a, b, { enumerable: false })[b];
+    }
+    function cv(a, b, c) {
+        [].slice.call(a, b, c);
     }
     function Err(e) {
         throw new Error(e);
@@ -12,14 +22,12 @@
     function Warn(e) {
         console.warn(e);
     }
-    function isArr(arr) {
-        return arr && Object.prototype.toString.call(arr) === '[object Array]';
-    }
-    function noenum(a, b) {
-        return a && def(a, b, { enumerable: false })[b];
-    }
-    function cv(a, b, c) {
-        return [].slice.call(a, b, c);
+    function CloneForIn(to, from, shallow) {
+        var O = Object;
+        for (var key in from)
+            if (!shallow || O.hasOwnProperty(from, key))
+                O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
+        return to;
     }
     var New = Object.create, def = Object.defineProperty, des = Object.getOwnPropertyDescriptor, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
             o.__proto__ = p;
@@ -117,7 +125,7 @@
                 this.node.classList[b === undefined && 'toggle' || b && 'add' || 'remove'](a);
             }    //get shim working if necessitated
 ,
-            INIT: function ($, a) {
+            INIT: function () {
             }
         };
     var Commands = {
@@ -158,6 +166,7 @@
                 }
                 ;
                 var B = A.$ = parent.__build__ || New(this, { parent: { value: parent } }), C = B.Current, F = parent.__factory__;
+                //Delete these keys after completion!!
                 if (F)
                     Inherit(A, F);
                 A.parse = function (a) {
@@ -204,8 +213,8 @@
                             Elem.node.classList.add(Node[x++]);
                     Cur.node.append(Elem);
                 }
-                Node = Type.INIT.apply(Elem, [Elem].concat(def.ag));
-                //.init(Elem, def.ag);
+                Elem.INIT(def.ag);
+                //Node = Type.INIT.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
                 return Elem;
             },
             next: function (a, b) {
@@ -306,52 +315,69 @@
                 };
             },
             parseID: function (id, $) {
-                id = id.toLowerCase().replace(new RegExp(' ', 'g'), '').split('>');
-                if (id[1]) {
-                    $.Outer = id[0];
-                    id = id[1];
-                } else
-                    id = id[0];
-                id = id.split(/(?=[:#&.@])/);
-                if (!$.$Atr)
-                    $.$Atr = {};
+                var meta = {
+                        atr: {},
+                        css: []
+                    };
+                id = id.toLowerCase().replace(/ /g, '').split('>');
+                id = (id[1] ? meta.wrap = id[0] && id[1] : id[0]).split(/(?=[:#&.@])/);
                 for (var i = 0, m, n, name; n = id[i++];) {
                     m = n.slice(1);
                     switch (n[0]) {
                     case '@':
-                        $.$Atr[m] = 0;
+                        meta.atr[m] = 0;
                         break;
                     case '#':
-                        $.$Atr.id = m;
+                        meta.atr.id = m;
                         break;
                     case '.':
-                        ($.$Css || ($.$Css = [])).push(m);
+                        meta.css.push(m);
                         break;
                     case '&':
-                        name = m;
-                        $.tagName = $.tagName || m;
+                        meta.name = m;
+                        meta.tag = meta.tag || m;
                         break;
                     default:
-                        $.tagName = n;
+                        meta.tag = n;
                     }
                 }
                 return name;
+            },
+            setup: function (self, keys, atrs) {
+                var info = {};
+                if (keys.ID)
+                    this.parseID(keys.ID, info);
+                def(self, 'INIT', {
+                    value: function (args) {
+                        for (var name in atrs)
+                            this.at(name, atrs[name]);
+                        if (keys.ON)
+                            var O = keys.ON.apply(this, arguments) || null;
+                        if (keys.DO) {
+                            var build = Build.New(this);
+                            keys.DO.apply(build.$.Current.node, [build].concat[args || []]);
+                            build.$.Current.done();
+                        }
+                        if (keys.IN)
+                            keys.IN.apply(this);
+                    }
+                });
             },
             parse: function (A, parentFactory) {
                 if (typeof A[0] == 'number' && A.length == 1)
                     return this.expect(A[0]);
                 if (typeof A[0] != 'string')
                     Err('Anonymous elements require atleast a tagname!');
-                var $ = New(Element), nChildren, a, i = 1;
-                if (parentFactory)
-                    $.__factory__ = parentFactory;
+                var $ = New(Element), nChildren, keys = this.parseID(A[0], this);
+                var i = 1, a, b;
                 if (typeof (a = A[i]) == 'string') {
                     i++;
                     $.$Text = a;
                 }
                 if (typeof (a = A[i]) == 'object') {
                     i++;
-                    $.$Atr = a;
+                    for (b in a)
+                        keys.atrs[b] = a[b];
                 }
                 if (typeof (a = A[i]) == 'number') {
                     i++;
@@ -361,82 +387,62 @@
                     i++;
                     $.INIT = a;
                 }
+                //CHANGE TO DO
+                if (parentFactory)
+                    $.__factory__ = parentFactory;
                 this.insert({
                     pr: $,
                     i: nChildren,
-                    ag: A.slice(i),
-                    nm: this.parseID(A[0], $)
+                    ag: A.slice(i)
                 });
+                this.is(this.parseID(A[0], this));
             }
         };
-    window.dominator = function (opts) {
+    var Factory = function (opts) {
         var Deps = New(Commands), root = {};
-        function define(name, def) {
-            if (!def)
-                throw new Error('No definition; we need a definition!');
-            var cd = root, y = (name = name.split('.')).pop();
-            for (var i = 0, x; x = name[i++];)
-                cd = cd[x];
-            link(def, cd, y);
-        }
+        isKey = /DO|ON|ID|IN/, isProperty = /^[a-z]/;
         function namespace(ns) {
+            Err('namespace not yet implemented!');
             return function () {
             };
         }
+        function define(path, def) {
+            if (!def)
+                throw new Error('No definition; we need a definition!');
+            var cd = root, name = (path = path.split('.')).pop();
+            for (var i = 0, x; x = path[i++];)
+                cd = cd[x];
+            link(def, cd, name);
+        }
         function link(def, dir, name) {
-            var y, x, a = null, self = {}, memb = {}, keys = {};
-            if (typeof def == 'function')
-                keys.DO = def;
+            var membs = destruct(def), existing = dir[name], spawner = template(members._root, name);
+            if (!dir && (spawner || Err('Cannot register an element with no properties!')));
             else
-                for (y in def) {
-                    if (/^[a-z_]/.test(y))
-                        a = self[y] = def[y];
-                    else if (/DO|ON|ID|IN/.test(y))
-                        a = keys[y] = def[y];
-                    else
-                        memb[y] = def[y];
-                }
-            if (a)
-                a = template(keys, self, name);
-            if (!dir && (a || Err('Can\'t spawn an element with no properties!')));
-            else
-                a = dir[name] = (x = dir[name]) ? a && CloneForIn(a, x, true) || x : a || namespace();
-            for (y in memb)
-                link(memb[y], a, y);
+                spawner = existing && spawner ? CloneForIn(spawner, existing, true) : existing || spawner || namespace();
+            for (x in membs)
+                link(membs[x], a, x);
             return a;
         }
-        function template(k, f, n) {
-            var tmpl = New(Element), Do = k.DO, On = k.ON;
-            tmpl.INIT = Do && On ? function () {
-                var build_args = On.apply(this, arguments);
-                if (isArr(build_args))
-                    this.DO.apply(null, [Do].concat(build_args));
-                else
-                    this.DO(Do);
-            } : Do && function () {
-                this.DO.apply(null, [Do].concat(cv(arguments)));
-            } || On || function () {
-                console.log(this.tagName);
-            };
-            if (k.IN)
-                tmpl.IN = k.IN;
-            var $O, $D;
-            for (var x in f) {
-                if (x[0] == '_')
-                    (typeof f[x] == 'string' ? $O || ($O = tmpl.$Atr = {}) : typeof f[x] == 'function' ? $D || ($D = tmpl.$Do = {}) : {})[x.substr(1)] = f[x];
-                else
-                    def(tmpl, x, des(f, x));
+        function destruct(def) {
+            var template = New(Element), members = {}, meta = {};
+            if (typeof def == 'function')
+                keys.DO = def;
+            else {
+                if (x = noemum(def, 'ID'))
+                    meta = Build.parse(x);
+                for (var x in def) {
+                    if (isProperty.test(y))
+                        template[y] = def[y];
+                    else if (isKey.test(y))
+                        meta[y] = def[y];
+                    else if (/^_/.test(y))
+                        (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
+                    else
+                        members[y] = def[y];
+                }
             }
-            if (n) {
-                n = n.toLowerCase();
-                //bug: when element is set again, it ignores first id, then collides with existing id if same.
-                if (k.ID)
-                    Build.parseID(k.ID, tmpl);
-                else
-                    tmpl.tagName = n || 'div';
-                return factory(tmpl, n);
-            } else
-                return tmpl;
+            Build.setup(template, meta);
+            return def(members, '_root', { value: template });
         }
         function factory(f, name) {
             name = name || undefined;
@@ -459,6 +465,13 @@
                 CloneForIn(Deps, root[x]);
             return this;
         };
+        define.startOnLoad = function (control) {
+            window.onload = function () {
+                if (!document || !document.body)
+                    Err('`document.body` not found! Is this a browser enviroment?');
+                define.start(control, document.body);
+            };
+        };
         define.start = function (control, target) {
             var def;
             if (typeof control == 'string') {
@@ -476,12 +489,12 @@
             } else
                 def = typeof control == 'function' ? New(Element, { INIT: { value: control } }) : typeof control == 'object' ? link(control) : Err('First argument must be identifier of an installed element, in-line element, or initializer function!');
             def.node = target;
-            for (var name in def.$Atr)
-                def.at(name, def.$Atr[name]);
             def.__factory__ = Deps;
-            //def.__build__ = Build.New(def).$;
             def.INIT();
         };
         return define;
     };
-}());
+    var MainFactory = Factory();
+    MainFactory.New = Factory;
+    return MainFactory;
+}));

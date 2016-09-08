@@ -4,6 +4,12 @@ macro isObj{ rule infix{ $d:expr |} => {typeof $d=="object"}}
 macro isNum{ rule infix{ $d:expr |} => {typeof $d=="number"}}
 macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
 
+//macro (|>) {
+//  rule infix { $lhs:expr | $rhs:expr ($arg:expr (,) ...) } => {
+//    $rhs()
+//  }
+//}
+
 macro => {
 	rule infix { $[&]() | $n:ident $b:body } => {
 	   (function $n() $b ) ()
@@ -26,14 +32,15 @@ macro => {
  }
 
 macro body{
-	rule{ {$body ...} } 
-	rule{ $body:expr } => {{return $body}}
+	rule{ {$body ...} }
+	rule{ => $body:expr } => {{return $body}}
+	rule{ $body:expr } => {{$body}}
 }
 
- macro __args {
+macro __args {
  	rule{($n:expr (,) ...)} => {cv(arguments, $n (,) ...)}
  	rule{} => {cv(arguments)}
-  }
+}
 
 let % = macro{
 	rule{ {$m:member ...} } => {{$m (,) ...}}
@@ -52,6 +59,10 @@ macro member{
 
 	rule{ $gs:accessor $nm:ident $ag:args $by:body }
 	  =>{ $gs $nm $ag $by }
+
+
+	rule{ get $nm:ident $by:body }
+	  =>{ get $nm () $by }
 
 	rule{ $name:ident : $value:expr }
 
@@ -87,3 +98,4 @@ export isNum
 export isBool
 export %
 export =>
+//export |>

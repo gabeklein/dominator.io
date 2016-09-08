@@ -1,5 +1,3 @@
 node_modules/
-www/img/
 .DS_Store
-host.js
-termlib.js
+build/
