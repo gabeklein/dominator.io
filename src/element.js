@@ -1,19 +1,4 @@
 var Element = %{
-	get DO{
-		var N = Build.New(this);
-		return (f)=>{
-			if(f isFun){
-				var n = f.apply(N.$.Current.node, [N].concat(__args(1)));
-				if(n===N) N.$.Current.done();
-			}
-			else if(f) N.parse(__args);
-			return N;
-		};
-	}
-	use(name, i){
-		if(name isNum) i=name; name = "V";
-		if((i = this[name = name+i]) isFun) this.DO(i);
-	}
 	on(arg, one){
 		var t=this, node=t.node;
 		if(!t.listeners) t.listeners = {};
@@ -44,10 +29,6 @@ var Element = %{
 		for(var y=this, n=n||1; n--;) y=y.parentNode;
 		return y;
 	}
-	append(New){
-		//append naked DOM node into child node
-		(New.parentNode = this).node.appendChild(New.node)
-	}
 	get $(){
 		//initialize jQuery on child node and return; remember instance.
 		return jQuery isFun && def(this, "$", {value: jQuery(this.node)}).$
@@ -72,5 +53,4 @@ var Element = %{
 		this.node.classList[ b === undefined && "toggle" || b && "add" || "remove"](a);
 		//get shim working if necessitated
 	}
-	INIT(){}
 };
