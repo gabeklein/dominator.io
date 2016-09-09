@@ -6,7 +6,7 @@
 }(this, function(){
 
 	isArr(arr) => arr && Object.prototype.toString.call( arr ) === '[object Array]'
-	noenum(a,b) => a && def(a,b,{enumerable:false})[b]
+	nenum(a,b,c) => def(a,b,c ? {enumerable:false} : {value:c} )[b]
 	cv(a,b,c) => [].slice.call(a,b,c)
 	Err(e) => { throw new Error(e) }
 	Warn(e) => { console.warn(e) }
