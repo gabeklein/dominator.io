@@ -7,14 +7,24 @@
     else
         root.dom = mod();
 }(this, function () {
+    var New = Object.create, def = Object.defineProperty, des = Object.getOwnPropertyDescriptor, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
+            o.__proto__ = p;
+        } : CloneForIn;
     function isArr(arr) {
         arr && Object.prototype.toString.call(arr) === '[object Array]';
     }
-    function noenum(a, b) {
-        a && def(a, b, { enumerable: false })[b];
+    function nenum(a, b, c) {
+        def(a, b, c ? { value: c } : { enumerable: false })[b];
     }
     function cv(a, b, c) {
         [].slice.call(a, b, c);
+    }
+    function put(a, b, c) {
+        if (typeof b == 'string')
+            def(a, b, c);
+        for (c in b)
+            def(a, c, b[c]);
+        return a;
     }
     function Err(e) {
         throw new Error(e);
@@ -29,29 +39,7 @@
                 O.defineProperty(to, key, O.getOwnPropertyDescriptor(from, key));
         return to;
     }
-    var New = Object.create, def = Object.defineProperty, des = Object.getOwnPropertyDescriptor, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
-            o.__proto__ = p;
-        } : CloneForIn;
     var Element = {
-            get DO() {
-                var N = Build.New(this);
-                return function (f) {
-                    if (typeof f == 'function') {
-                        var n = f.apply(N.$.Current.node, [N].concat(cv(arguments, 1)));
-                        if (n === N)
-                            N.$.Current.done();
-                    } else if (f)
-                        N.parse(cv(arguments));
-                    return N;
-                };
-            },
-            use: function (name, i) {
-                if (typeof name == 'number')
-                    i = name;
-                name = 'V';
-                if (typeof (i = this[name = name + i]) == 'function')
-                    this.DO(i);
-            },
             on: function (arg, one) {
                 var t = this, node = t.node;
                 if (!t.listeners)
@@ -94,10 +82,6 @@
                     y = y.parentNode;
                 return y;
             },
-            append: function (New) {
-                //append naked DOM node into child node
-                (New.parentNode = this).node.appendChild(New.node);
-            },
             get $() {
                 //initialize jQuery on child node and return; remember instance.
                 return typeof jQuery == 'function' && def(this, '$', { value: jQuery(this.node) }).$;
@@ -124,9 +108,6 @@
             cl: function (a, b) {
                 this.node.classList[b === undefined && 'toggle' || b && 'add' || 'remove'](a);
             }    //get shim working if necessitated
-,
-            INIT: function () {
-            }
         };
     var Commands = {
             i: function (n) {
@@ -158,20 +139,17 @@
                 return this.$.cache;
             }
         };
-    var Build = window.lol = {
+    var Build = {
             New: function (parent, on) {
                 function A() {
                     B.interp(cv(arguments), F);
                     return A;
                 }
                 ;
-                var B = A.$ = parent.__build__ || New(this, { parent: { value: parent } }), C = B.Current, F = parent.__factory__;
-                //Delete these keys after completion!!
-                if (F)
-                    Inherit(A, F);
-                A.interp = function (a) {
-                    B.interp(a, F);
-                };
+                var B = A._ = parent.__build__ || New(this, { parent: { value: parent } }), C = B.Current;
+                //Delete keys on parent after completion!!
+                if (parent._factory)
+                    Inherit(A, parent._factory);
                 B.Current = {
                     i: -1,
                     node: on || parent,
@@ -190,16 +168,13 @@
                     Warn('Current element already expects a certain number of children. Overriding that may lead to errors!');
                 c.i = x;
             },
-            insert: function (def, meta) {
-                var Type = def.pr, Elem = New(Type), Cur = this.next(Elem), Node;
-                if (Node = meta.wrap)
-                    this.parse([
-                        Node,
-                        1
-                    ]);
+            insert: function (meta, def, args) {
+                var Elem = New(def), Cur = this.next(Elem), Node;
+                //if(Node = meta.wrap) this.parse([Node,1]);
+                if (meta.outer)
+                    for (var i = 0, n; n = meta.outer[i++];)
+                        this.insert(Elem, n);
                 this.Current.i = meta.nChildren || 0;
-                if (def.nm)
-                    this.is(def.nm);
                 if (Node = Type.tagName) {
                     Node = Elem.node = document.createElement(Node);
                     if (Type.$Text)
@@ -211,15 +186,15 @@
                             Elem.node.classList.add(Node[x++]);
                     Cur.node.append(Elem);
                 }
-                Elem.INIT(def.ag);
-                //Node = Type.INIT.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
+                Elem._nodeIsAppended(def.ag);
+                //Node = Type._nodeIsAppended.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
                 return Elem;
             },
             next: function (a, b) {
-                var t = this, c;
+                var t = this;
                 while (t.Current.i === 0)
                     t.Current.done();
-                c = t.Current;
+                var c = t.Current;
                 t.Current = a == null ? {
                     i: -1,
                     node: c.node,
@@ -247,15 +222,6 @@
                     p[n],
                     c
                 ] : p[n] = c;
-            },
-            when: function (x) {
-                if (!x)
-                    this.insert = function (def) {
-                        if (def.i || !def)
-                            Err('Nesting is not supported for conditional elements!');
-                        this.next(null);
-                        delete this.insert;
-                    };
             },
             setText: function ($, t) {
                 if (typeof t == 'string')
@@ -298,8 +264,8 @@
                 this.next(null);
                 this.insert = function (def) {
                     var l, list = def.nm && (this.parent[def.nm] = []);
-                    if (!def.pr.hasOwnProperty('INIT'))
-                        def.pr.INIT = this.setText;
+                    if (!def.pr.hasOwnProperty('_nodeIsAppended'))
+                        def.pr._nodeIsAppended = this.setText;
                     for (var i = 0; i < reps; i++) {
                         l = Build.insert.call(this, {
                             pr: def.pr,
@@ -320,7 +286,7 @@
                 if ((id = id.split('>')).length > 1)
                     return id.map(this.parse);
                 else
-                    id = id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@~^])/);
+                    id = id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@^])/);
                 for (var i = id.length, m, n, name; n = id[--i];) {
                     m = n.slice(1);
                     switch (n[0]) {
@@ -342,153 +308,159 @@
                         meta.name = m;
                         meta.tag = m;
                         break;
+                    case '^':
+                        meta.index = true;
+                        break;
                     default:
                         meta.tag = n;
                     }
                 }
                 return meta;
             },
-            setup: function (self, meta) {
-                if (Object.meta(meta) == 0)
-                    return 0;
-                def(self, 'INIT', {
-                    value: function (args) {
-                        var n, i, o;
-                        for (n in meta.atrs)
-                            this.at(n, atrs[n]);
-                        for (n = meta.css, i = n.length; i > 0;)
-                            this.cl(n[--i]);
-                        if (meta.ON)
-                            var args = meta.ON.apply(this, arguments) || null;
-                        if (meta.DO) {
-                            var build = Build.New(this);
-                            meta.DO.apply(build.$.Current.node, [build].concat[args || []]);
-                            build.$.Current.done();
-                        }
-                        if (meta.IN)
-                            meta.IN.apply(this);
-                    }
+            wrap_do: function (Do) {
+                put($, '_nodeIsAppended', function (args) {
+                    var build = Build.New(this);
+                    Do.apply(build._.Current.node, [build].concat(args || []));
+                    build._.Current.done();
                 });
+            },
+            wrap: function (element, meta) {
+                var build;
+                put(element, '_nodeIsAppended', function () {
+                    var n, i;
+                    for (n in meta.atrs)
+                        this.at(n, atrs[n]);
+                    for (n = meta.css, i = n.length; i > 0;)
+                        this.cl(n[--i]);
+                    if (meta.ON)
+                        if (!isArr(args = meta.ON.apply(this, args)))
+                            args = [];
+                    if (meta.DO) {
+                        build = Build.New(this);
+                        meta.DO.apply(build._.Current.node, [build].concat(args));
+                        build._.Current.done();
+                    }
+                    if (meta.IN)
+                        meta.IN.apply(this);
+                    return meta.name;
+                });
+                if (meta.IN)
+                    noenum(element, 'innerIsAppended', meta.IN);
             },
             interp: function (A, parentFactory) {
                 if (typeof A[0] == 'number' && A.length == 1)
                     return this.expect(A[0]);
                 if (typeof A[0] != 'string')
                     Err('Anonymous elements require atleast a tagname!');
-                var $ = New(Element), nChildren, meta = this.parse(A[0]);
-                var i = 1, a, b;
+                var $ = New(Element), meta = this.parse(A[0]), i = 1, a, b;
+                if (isArr(meta))
+                    meta = def(meta.pop(), 'outer', { value: meta });
                 if (typeof (a = A[i]) == 'string') {
                     i++;
-                    $.$Text = a;
+                    meta.text = a;
                 }
                 if (typeof (a = A[i]) == 'object') {
                     i++;
                     for (b in a)
-                        keys.atrs[b] = a[b];
+                        meta.atrs[b] = a[b];
                 }
                 if (typeof (a = A[i]) == 'number') {
                     i++;
                     meta.nChild = a;
                 }
-                // if( (a=A[i]) isFun ){i++; $.INIT=a} //CHANGE TO DO
+                if (typeof (a = A[i]) == 'function') {
+                    i++;
+                    put($, '_nodeIsAppended', wrap_do(a));
+                }
                 if (parentFactory)
-                    $.__factory__ = parentFactory;
-                this.insert({
-                    pr: $,
-                    ag: A.slice(i)
-                });
-                this.is(meta.name);
+                    put($, '_factory', parentFactory);
+                this.insert($, meta);
+                if (meta.name)
+                    this.is(meta.name);
             }
         };
     var Factory = function (opts) {
-        var Deps = New(Commands), root = {};
-        isKey = /DO|ON|ID|IN/, isProperty = /^[a-z]/;
-        function define(path, def) {
+        var Deps = New(Commands), Defined = {}, isKey = /DO|ON|ID|IN/, isProperty = /^[a-z]/;
+        function register(path, def) {
             if (!def)
-                throw new Error('No definition; we need a definition!');
-            var cd = root, name = (path = path.split('.')).pop();
+                throw new Error('Bad Arguments: No definition for Element!');
+            var cd = Defined, root = {}, name = (path = path.split('.')).pop();
             for (var i = 0, x; x = path[i++];)
                 cd = cd[x];
-            link(def, cd, name);
+            root[name] = root;
+            put(root, '_root', Defined);
+            stack(root);
         }
-        function link(def, dir, name) {
-            var tree = interpret(def, callName), self = tree.root;
-            if (!dir && (self || Err('Cannot register an element with no properties!')));
-            else {
-                var existing = dir[name];
-                self = existing && self ? CloneForIn(self, existing, true) : existing || self || Err('Cannot insert nothing.');
-            }
-            for (x in membs)
-                link(membs[x], a, x);
-            return a;
-        }
-        function interpret(def, callName) {
-            var temp = New(Element), tree = {}, meta = {};
-            if (typeof def == 'function') {
-                meta.DO = def;
-                meta.name = callName;
-            } else {
-                if (x = noemum(def, 'ID'))
-                    meta = Build.parse(x, callName);
-                for (var x in def) {
-                    if (isProperty.test(y))
-                        temp[y] = def[y];
-                    else if (isKey.test(y))
-                        meta[y] = def[y];
-                    else if (/^_/.test(y))
-                        (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
-                    else
-                        tree[y] = def[y];
+        function stack(q) {
+            var i = 0, q = [q], outer;
+            while (outer = q[i]) {
+                for (var x in outer) {
+                    var inner = destruct(outer[x], x), root = factory(inner._root), existing = outer._root[x];
+                    inner._root = root && existing ? CloneForIn(root, existing, true) : existing || root || Err('Cannot Define Nothing');
+                    q.push(inner);
+                }
+                if (++i > q.length / 2) {
+                    q = q.slice(i);
+                    i = 0;
                 }
             }
-            //non-enumerably add _root and return members
-            return def(tree, 'root', { value: Build.setup(root, meta) });
         }
-        function factory(f, name) {
-            name = name || undefined;
-            function Insert() {
-                this.$.insert({
-                    pr: f,
-                    ag: cv(arguments),
-                    nm: name
-                });
+        function define(def, name) {
+            var temp = New(Element);
+            Build.wrap_do(temp, def);
+            put(temp, '_nodeIsAppended', Build.wrap_do(def));
+            temp.tagName = name;
+            return temp;
+        }
+        function destruct(def, name, parent) {
+            var temp = New(Element), tree = {}, meta = {};
+            if (x = nemum(def, 'ID'))
+                meta = Build.parse(x, callName);
+            for (var x in def) {
+                if (isProperty.test(y))
+                    temp[y] = def[y];
+                else if (isKey.test(y))
+                    meta[y] = def[y];
+                else if (/^_/.test(y))
+                    (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
+                else
+                    tree[y] = def[y];
+            }
+            if (!temp.tagName)
+                temp.tagName = meta.tag || name;
+            put(temp, '_nodeIsAppended', Build.wrap(meta));
+            put(tree, '_root', factory(temp));
+            return tree;
+        }
+        function factory(def) {
+            function fac() {
+                this._.insert(def, cv(arguments));
                 return this;
             }
-            def(f, '__factory__', { value: Insert });
-            Inherit(Insert, Deps);
-            return Insert;
+            put(def, '_factory', fac);
+            put(fac, '_template', def);
+            Inherit(fac, Deps);
+            return fac;
         }
-        define.startOnLoad = function (control, callback) {
+        register.startOnLoad = function (control, callback) {
             window.onload = function () {
                 if (!document || !document.body)
                     Err('`document.body` not found! Is this a browser enviroment?');
-                define.start(control, document.body);
-                callback();
+                register.start(control, document.body);
+                if (typeof callback == 'function')
+                    callback();
             };
         };
-        define.start = function (control, target) {
-            var def;
-            if (typeof control == 'string') {
-                if (typeof root[control] == 'function')
-                    ({
-                        _: root[control],
-                        $: {
-                            insert: function (x) {
-                                def = New(x.pr);
-                            }
-                        }
-                    }._());
-                else
-                    Err('Control Element "' + control + '" is not yet imported or defined!');
-            } else
-                def = typeof control == 'function' ? New(Element, { INIT: { value: control } }) : typeof control == 'object' ? link(control) : Err('First argument must be identifier of an installed element, in-line element, or initializer function!');
+        register.start = function (control, target) {
+            var def = typeof control == 'string' ? root[control] && root[control]._template || Err('Control Element "' + control + '" is not yet imported or registered!') : typeof control == 'function' ? define(control, target.tagName) : typeof control == 'object' ? link(control) : Err('First argument must be identifier of an installed element, in-line element, or initializer function!');
             def.node = target;
-            def.__factory__ = Deps;
-            def.INIT();
+            def._factory = Deps;
+            def._nodeIsAppended();
         };
-        return define;
+        return register;
     };
     var MainFactory = Factory();
     MainFactory.New = Factory;
     return MainFactory;
 }));
+//# sourceMappingURL=main.js.map

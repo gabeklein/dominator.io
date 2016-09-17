@@ -1,78 +1,90 @@
 var Factory = function(opts){
 
-	var Deps = New(Commands), root = {}
+	var Deps = New(Commands),
+		Defined = {},
 		isKey = /DO|ON|ID|IN/,
 		isProperty = /^[a-z]/;
 
 	//reimplement by returning to nLevel recursively
-	define(path, def) => {
-		if(!def) throw new Error("No definition; we need a definition!")
-		var cd=root, name=(path=path.split('.')).pop();
+	register(path, def) => {
+		if(!def) throw new Error("Bad Arguments: No definition for Element!")
+		var cd=Defined, root = {},
+			name=(path=path.split('.')).pop();
+
 		for(var i=0, x; x=path[i++];) cd=cd[x];
-		link(def, cd, name);
+
+		root[name] = root;
+		put(root, "_root", Defined);
+		stack(root)
 	}
-	link(def, dir, name) => {
-		var tree = interpret(def, callName),
-			self = tree.root;
-		if(!dir && (self || Err("Cannot register an element with no properties!")));
-		else {
-			var existing = dir[name];
-			self = (existing && self)
-			? CloneForIn(self, existing, true)
-			: existing || self || Err("Cannot insert nothing.");
-		}
-		for(x in membs) link(membs[x], a, x);
-		return a;
-	}
-	interpret(def, callName) => {
-		var temp = New(Element), tree = {}, meta={};
-		if(def isFun){
-			meta.DO = def;
-			meta.name = callName;
-		}
-		else {
-			if(x = noemum(def, "ID")) meta = Build.parse(x, callName);
-			for(var x in def){
-				if(isProperty.test(y)) temp[y]=def[y];
-				else if(isKey.test(y)) meta[y]=def[y];
-				else if( /^_/.test(y))
-					( def[x] isStr ? meta.atrs : {} )
-						[x.substr(1)] = def[x];
-				else tree[y]=def[y];
+	stack(q) => {
+		var i = 0, q = [q], outer;
+		while(outer = q[i]){
+			for(var x in outer){
+				var inner = destruct(outer[x], x),
+					root = factory(inner._root),
+					existing = outer._root[x];
+
+				inner._root = (root && existing)
+				? CloneForIn(root, existing, true)
+				: existing || root || Err("Cannot Define Nothing")
+
+				q.push(inner)
 			}
+		    if (++i > q.length / 2){ q = q.slice(i); i = 0; }
 		}
-		//non-enumerably add _root and return members
-		return def(tree, "root", {value:
-			Build.setup(root, meta)
-		});
 	}
-	factory(f, name) => {
-		name = name || undefined; //idk actually
-		Insert() => { this.$.insert({pr:f, ag:__args, nm:name}); return this; }
-		def(f, "__factory__", {value:Insert});
-		Inherit(Insert, Deps);
-		return Insert;
+	define(def, name) => {
+		var temp = New(Element);
+		Build.wrap_do(temp, def)
+		put(temp, "_nodeIsAppended", Build.wrap_do(def));
+		temp.tagName = name;
+		return temp;
 	}
-	define.startOnLoad = (control, callback) => {
+	destruct(def, name, parent) => {
+		var temp = New(Element),
+			tree = {}, meta = {};
+		if(x = nemum(def, "ID")) meta = Build.parse(x, callName);
+		for(var x in def){
+			if(isProperty.test(y)) temp[y]=def[y];
+			else if(isKey.test(y)) meta[y]=def[y];
+			else if( /^_/.test(y))
+				( def[x] isStr ? meta.atrs : {} )
+					[x.substr(1)] = def[x];
+			else tree[y]=def[y];
+		}
+		if(!temp.tagName) temp.tagName = meta.tag || name;
+		put(temp, "_nodeIsAppended", Build.wrap(meta));
+		put(tree, "_root", factory(temp));
+		return tree
+	}
+	factory(def) => {
+		fac() => { this._.insert(def, __args); return this; }
+		put(def, "_factory", fac);
+		put(fac, "_template", def)
+		Inherit(fac, Deps);
+		return fac;
+	}
+	register.startOnLoad = (control, callback) => {
 		window.onload = () => {
 			if(!document || !document.body) Err("`document.body` not found! Is this a browser enviroment?")
-			define.start(control, document.body);
-			callback()
+			register.start(control, document.body);
+			if(callback isFun) callback();
 		}
 	}
-	define.start = (control, target) => {
-		var def;
-		if(control isStr){
-			if(root[control] isFun)
-				({ _: root[control], $:{ insert:function(x){ def=New(x.pr) }}})._();
-			else Err('Control Element "' + control + '" is not yet imported or defined!');
-		} else def =
-			control isFun ? New(Element, { INIT: {value:control} }) :
-			control isObj ? link(control) :
-			Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
+	register.start = (control, target) => {
+		var def = control isStr
+			? root[control]
+				&& root[control]._template
+				|| Err('Control Element "' + control + '" is not yet imported or registered!')
+			: control isFun
+				? define(control, target.tagName)
+				: control isObj
+					? link(control)
+					: Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
 		def.node = target;
-		def.__factory__ = Deps;
-		def.INIT();
+		def._factory = Deps;
+		def._nodeIsAppended();
 	}
-	return define;
+	return register;
 }

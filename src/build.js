@@ -1,14 +1,13 @@
-var Build = window.lol = %{
+var Build = %{
 	New(parent, on){
-		function A(){ B.interp(__args, F); return A };
-		var B = A.$ = parent.__build__ || New(this, {parent: {value: parent}}),
-			C = B.Current,
-			F = parent.__factory__;
-		//Delete these keys after completion!!
-		if(F) Inherit(A,F);
-		A.interp = function(a){
-			B.interp(a,F);
-		}
+		function A(){
+			B.interp(__args, F);
+			return A
+		};
+		var B = A._ = parent.__build__ || New(this, {parent: {value: parent}}),
+			C = B.Current;
+		//Delete keys on parent after completion!!
+		if(parent._factory) Inherit(A, parent._factory);
 		B.Current = %{
 			i:-1
 			node:on || parent
@@ -25,13 +24,14 @@ var Build = window.lol = %{
 		if(c.i) Warn("Current element already expects a certain number of children. Overriding that may lead to errors!");
 		c.i = x;
 	}
-	insert(def, meta){
-		var Type = def.pr, Elem = New(Type),
+	insert(meta, def, args){
+		var Elem = New(def),
 			Cur = this.next(Elem), Node;
+		//if(Node = meta.wrap) this.parse([Node,1]);
 
-		if(Node = meta.wrap) this.parse([Node,1]);
+		if(meta.outer) for(var i=0, n; n=meta.outer[i++];) this.insert(Elem, n);
+
 		this.Current.i = meta.nChildren || 0;
-		if(def.nm) this.is(def.nm);
 
 
 
@@ -47,16 +47,16 @@ var Build = window.lol = %{
 		}
 
 
-		Elem.INIT(def.ag);
-		//Node = Type.INIT.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
+		Elem._nodeIsAppended(def.ag);
+		//Node = Type._nodeIsAppended.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
 		return Elem;
 	}
 	next(a,b){
-		var t=this, c;
+		var t=this;
 		while(t.Current.i === 0) t.Current.done();
-		c = t.Current;
-		t.Current = a == null
-        ? %{
+		var c = t.Current;
+		t.Current = (a == null)?
+        %{
 			i:-1
 			node:c.node
 			done(){
@@ -80,13 +80,6 @@ var Build = window.lol = %{
 	is(name){
 		var c = this.Current, p = this.parent, n = name || c.tagName, c=c.node;
 		p[n] ? isArr(p[n]) ? p[n].push(c) : p[n] = [p[n], c] : p[n] = c;
-	}
-	when(x){
-		if(!x) this.insert = function(def){
-			if(def.i || !def) Err("Nesting is not supported for conditional elements!")
-			this.next(null);
-			delete this.insert;
-		}
 	}
 	setText($, t){
 		if(t isStr) $.text=t;
@@ -123,7 +116,7 @@ var Build = window.lol = %{
 		this.next(null);
 		this.insert=function(def){
 			var l, list = def.nm && (this.parent[def.nm] = []);
-			if(!def.pr.hasOwnProperty("INIT")) def.pr.INIT = this.setText;
+			if(!def.pr.hasOwnProperty("_nodeIsAppended")) def.pr._nodeIsAppended = this.setText;
 			for(var i=0; i<reps; i++){
 				l = Build.insert.call(this, {
 					pr:def.pr,
@@ -138,49 +131,57 @@ var Build = window.lol = %{
 	parse(id){
 		var meta = {atr:{},css:[]};
 		if((id=id.split(">")).length > 1) return id.map(this.parse);
-		else id=id[0].toLowerCase().replace(/ /g,"").split(/(?=[\[:#&.@~^])/);
+		else id=id[0].toLowerCase().replace(/ /g,"").split(/(?=[\[:#&.@^])/);
 		for(var i=id.length, m, n, name; n=id[--i];){
 			m=n.slice(1);
 			switch(n[0]){
 				case ".": meta.css.push(m); break;
 				case "#": meta.atr.id=m; break;
-				case "@": m.split(',').map((a)=>{ meta.atr[a]=0 }) break;
+				case "@": m.split(',').map((a)=>{ meta.atr[a]=0 }); break;
 				case "[": meta.index=Number.parseInt(m.slice(0, -1)); break;
 				case "&": meta.name=m; meta.tag=m; break;
+				case "^": meta.index=true; break;
 				default : meta.tag=n;
 			}
 		}
 		return meta;
 	}
-	setup(self, meta){
-		if(Object.meta(meta)==0) return 0;
-		def(self, "INIT", { value: (args) => {
-			var n, i, o;
+	wrap_do(Do){
+		put($, "_nodeIsAppended", (args) => {
+			var build = Build.New(this);
+			Do.apply(build._.Current.node, [build].concat(args || []))
+			build._.Current.done();
+		})
+	}
+	wrap(element, meta){
+		var build;
+		put(element, "_nodeIsAppended", () => {
+			var n, i;
 			for(n in meta.atrs) this.at(n, atrs[n]);
 			for(n=meta.css, i=n.length; i > 0;) this.cl(n[--i]);
-			if(meta.ON) var args = meta.ON.apply(this, arguments) || null;
+
+			if(meta.ON) if(!isArr(args = meta.ON.apply(this, args))) args = [];
 			if(meta.DO){
-				var build = Build.New(this);
-				meta.DO.apply(build.$.Current.node, [build].concat[args || []])
-				build.$.Current.done();
+				build = Build.New(this);
+				meta.DO.apply(build._.Current.node, [build].concat(args))
+				build._.Current.done();
 			}
 			if(meta.IN) meta.IN.apply(this)
-		}})
+			return meta.name;
+		})
+		if(meta.IN) noenum(element, "innerIsAppended", meta.IN)
 	}
 	interp(A, parentFactory){
 		if(A[0] isNum && A.length==1) return this.expect(A[0]);
 		if(typeof A[0] != 'string') Err("Anonymous elements require atleast a tagname!");
-		var $=New(Element), nChildren, meta = this.parse(A[0]);
-
-		var i = 1, a, b;
-		if( (a=A[i]) isStr ){i++; $.$Text=a}
-		if( (a=A[i]) isObj ){i++; for(b in a) keys.atrs[b] = a[b]}
+		var $=New(Element), meta = this.parse(A[0]), i = 1, a, b;
+		if(isArr(meta)) meta = def(meta.pop(), "outer", {value: meta})
+		if( (a=A[i]) isStr ){i++; meta.text=a}
+		if( (a=A[i]) isObj ){i++; for(b in a) meta.atrs[b] = a[b]}
 		if( (a=A[i]) isNum ){i++; meta.nChild=a}
-		// if( (a=A[i]) isFun ){i++; $.INIT=a} //CHANGE TO DO
-
-		if(parentFactory) $.__factory__ = parentFactory;
-
-		this.insert({pr:$, ag:A.slice(i)})
-		this.is( meta.name )
+		if( (a=A[i]) isFun ){i++; put($, "_nodeIsAppended", wrap_do(a))}
+		if(parentFactory) put($, "_factory", parentFactory);
+		this.insert($, meta)
+		if(meta.name) this.is( meta.name )
 	}
 };

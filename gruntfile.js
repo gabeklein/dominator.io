@@ -12,7 +12,7 @@ module.exports = function(grunt) {
         sweetjs:{
             options: {
                 modules: ["./macros/macros.sjs"],
-                sourceMap: false,
+                sourceMap: true,
                 readableNames: true
             },
             compile:{
@@ -30,7 +30,7 @@ module.exports = function(grunt) {
 			main: {
 				src: 'build/main.js',
 				dest: 'dist/dominator.io.js',
-			},
+			}
 		},
         watch:{
            options: {
