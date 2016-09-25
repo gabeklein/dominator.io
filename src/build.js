@@ -5,9 +5,9 @@ var Build = %{
 			return A
 		};
 		var B = A._ = parent.__build__ || New(this, {parent: {value: parent}}),
-			C = B.Current;
+			C = B.Current, F = parent._factory;
 		//Delete keys on parent after completion!!
-		if(parent._factory) Inherit(A, parent._factory);
+		if(F) Inherit(A, F);
 		B.Current = %{
 			i:-1
 			node:on || parent
@@ -17,56 +17,45 @@ var Build = %{
 		};
 		return A;
 	}
-	expect(x){
-		//just check for hasOwnProperty
-		if(this.hasOwnProperty("insert")) return Warn("Cannot explicitly expect children when overrides are in place. Ignoring command.")
-		var c = this.Current;
-		if(c.i) Warn("Current element already expects a certain number of children. Overriding that may lead to errors!");
-		c.i = x;
-	}
 	insert(meta, def, args){
-		var Elem = New(def),
-			Cur = this.next(Elem), Node;
-		//if(Node = meta.wrap) this.parse([Node,1]);
+		var instance = New(def), i, x,
+			current = this.next(instance);
 
-		if(meta.outer) for(var i=0, n; n=meta.outer[i++];) this.insert(Elem, n);
+		if(meta.outer) for(i=0, x; x=meta.outer[i++];) {
+			//process wrapper elements
+		}
 
 		this.Current.i = meta.nChildren || 0;
 
-
-
-		if(Node = Type.tagName){
-			Node = Elem.node = document.createElement(Node);
-			if(Type.$Text) Node.textContent = Type.$Text;
-			for(x in Node = Type.$Atr)
-				Elem.at(x,Node[x]);
-			if(Node=Type.$Css)
-				for(x=0; x<Node.length;)
-					Elem.node.classList.add(Node[x++]);
-			Cur.node.append(Elem);
+		if(element = def.tag){
+			var element = instance.node = document.createElement(element);
+			if(meta.text) element.textContent = meta.text;
+			for(x in i = meta.atrs)
+				instance.at(x, i[x]);
+			for(i=0, x=meta.css; i<x.length;)
+				element.classList.add(x[i++]);
+			current.node.append(instance);
 		}
-
-
-		Elem._nodeIsAppended(def.ag);
-		//Node = Type._nodeIsAppended.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
-		return Elem;
+		instance.ElementDidLoad(args);
+		return element;
 	}
 	next(a,b){
 		var t=this;
+		//recursively pop frames where no more child calls are expected
 		while(t.Current.i === 0) t.Current.done();
 		var c = t.Current;
-		t.Current = (a == null)?
+		t.Current = (a == null) ?
         %{
-			i:-1
-			node:c.node
+			i: -1
+			node: c.node
 			done(){
 				t.Current = c;
 				c.i--;
 				t.Last = a;
 			}
 		} : %{
-			i:0
-			node:a
+			i: 0
+			node: a
 			done(){
 				t.Current = c;
 				c.i--;
@@ -116,7 +105,7 @@ var Build = %{
 		this.next(null);
 		this.insert=function(def){
 			var l, list = def.nm && (this.parent[def.nm] = []);
-			if(!def.pr.hasOwnProperty("_nodeIsAppended")) def.pr._nodeIsAppended = this.setText;
+			if(!def.pr.hasOwnProperty("ElementDidLoad")) def.pr.ElementDidLoad = this.setText; //UNACCEPTABLE!!!
 			for(var i=0; i<reps; i++){
 				l = Build.insert.call(this, {
 					pr:def.pr,
@@ -128,6 +117,7 @@ var Build = %{
 			delete this.insert;
 		}
 	}
+
 	parse(id){
 		var meta = {atr:{},css:[]};
 		if((id=id.split(">")).length > 1) return id.map(this.parse);
@@ -146,31 +136,28 @@ var Build = %{
 		}
 		return meta;
 	}
-	wrap_do(Do){
-		put($, "_nodeIsAppended", (args) => {
-			var build = Build.New(this);
-			Do.apply(build._.Current.node, [build].concat(args || []))
-			build._.Current.done();
-		})
-	}
-	wrap(element, meta){
-		var build;
-		put(element, "_nodeIsAppended", () => {
-			var n, i;
-			for(n in meta.atrs) this.at(n, atrs[n]);
-			for(n=meta.css, i=n.length; i > 0;) this.cl(n[--i]);
 
-			if(meta.ON) if(!isArr(args = meta.ON.apply(this, args))) args = [];
-			if(meta.DO){
-				build = Build.New(this);
-				meta.DO.apply(build._.Current.node, [build].concat(args))
-				build._.Current.done();
-			}
-			if(meta.IN) meta.IN.apply(this)
+	run(instance, instruct, info){
+		var build = Build.New(instance);
+		instruct.apply(instance, [build].concat(info || []))
+		build.end();
+	}
+
+	wrap_do(Do) => (args) => {
+		Build.run(this, Do, args)
+	}
+
+	wrap(element, meta){
+		put(element, "ElementDidLoad", (args) => {
+			for(var n=meta.css, i=n.length; i > 0;) this.cl(n[--i]);
+			for(n in meta.atrs) this.at(n, atrs[n]);
+			if(meta.ON) args = isArr(meta.ON.apply(this, args)) || [];
+			if(meta.DO) Build.run(this, meta.DO, args)
 			return meta.name;
 		})
-		if(meta.IN) noenum(element, "innerIsAppended", meta.IN)
+		if(meta.IN) put(element, "InnerDidLoad", meta.IN)
 	}
+
 	interp(A, parentFactory){
 		if(A[0] isNum && A.length==1) return this.expect(A[0]);
 		if(typeof A[0] != 'string') Err("Anonymous elements require atleast a tagname!");
@@ -179,9 +166,10 @@ var Build = %{
 		if( (a=A[i]) isStr ){i++; meta.text=a}
 		if( (a=A[i]) isObj ){i++; for(b in a) meta.atrs[b] = a[b]}
 		if( (a=A[i]) isNum ){i++; meta.nChild=a}
-		if( (a=A[i]) isFun ){i++; put($, "_nodeIsAppended", wrap_do(a))}
+		if( (a=A[i]) isFun ){i++; put($, "ElementDidLoad", this.wrap_do(a))}
 		if(parentFactory) put($, "_factory", parentFactory);
-		this.insert($, meta)
+		this.insert(meta, $)
 		if(meta.name) this.is( meta.name )
 	}
+
 };

@@ -53,4 +53,6 @@ var Element = %{
 		this.node.classList[ b === undefined && "toggle" || b && "add" || "remove"](a);
 		//get shim working if necessitated
 	}
+	ElementDidLoad(){ /*add default behavior*/ }
+	InnerDidLoad(){}
 };

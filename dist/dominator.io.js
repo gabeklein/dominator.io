@@ -10,20 +10,21 @@
     var New = Object.create, def = Object.defineProperty, des = Object.getOwnPropertyDescriptor, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
             o.__proto__ = p;
         } : CloneForIn;
-    function isArr(arr) {
-        arr && Object.prototype.toString.call(arr) === '[object Array]';
+    function isArr(a) {
+        return a && Object.prototype.toString.call(a) === '[object Array]' && a;
     }
     function nenum(a, b, c) {
-        def(a, b, c ? { value: c } : { enumerable: false })[b];
+        return def(a, b, c ? { value: c } : { enumerable: false })[b];
     }
     function cv(a, b, c) {
-        [].slice.call(a, b, c);
+        return [].slice.call(a, b, c);
     }
     function put(a, b, c) {
         if (typeof b == 'string')
-            def(a, b, c);
-        for (c in b)
-            def(a, c, b[c]);
+            def(a, b, { value: c });
+        else
+            for (c in b)
+                def(a, c, b[c]);
         return a;
     }
     function Err(e) {
@@ -108,6 +109,11 @@
             cl: function (a, b) {
                 this.node.classList[b === undefined && 'toggle' || b && 'add' || 'remove'](a);
             }    //get shim working if necessitated
+,
+            ElementDidLoad: function () {
+            }    /*add default behavior*/,
+            InnerDidLoad: function () {
+            }
         };
     var Commands = {
             i: function (n) {
@@ -146,10 +152,10 @@
                     return A;
                 }
                 ;
-                var B = A._ = parent.__build__ || New(this, { parent: { value: parent } }), C = B.Current;
+                var B = A._ = parent.__build__ || New(this, { parent: { value: parent } }), C = B.Current, F = parent._factory;
                 //Delete keys on parent after completion!!
-                if (parent._factory)
-                    Inherit(A, parent._factory);
+                if (F)
+                    Inherit(A, F);
                 B.Current = {
                     i: -1,
                     node: on || parent,
@@ -159,39 +165,28 @@
                 };
                 return A;
             },
-            expect: function (x) {
-                //just check for hasOwnProperty
-                if (this.hasOwnProperty('insert'))
-                    return Warn('Cannot explicitly expect children when overrides are in place. Ignoring command.');
-                var c = this.Current;
-                if (c.i)
-                    Warn('Current element already expects a certain number of children. Overriding that may lead to errors!');
-                c.i = x;
-            },
             insert: function (meta, def, args) {
-                var Elem = New(def), Cur = this.next(Elem), Node;
-                //if(Node = meta.wrap) this.parse([Node,1]);
+                var instance = New(def), i, x, current = this.next(instance);
                 if (meta.outer)
-                    for (var i = 0, n; n = meta.outer[i++];)
-                        this.insert(Elem, n);
+                    for (i = 0, x; x = meta.outer[i++];) {
+                    }    //process wrapper elements
                 this.Current.i = meta.nChildren || 0;
-                if (Node = Type.tagName) {
-                    Node = Elem.node = document.createElement(Node);
-                    if (Type.$Text)
-                        Node.textContent = Type.$Text;
-                    for (x in Node = Type.$Atr)
-                        Elem.at(x, Node[x]);
-                    if (Node = Type.$Css)
-                        for (x = 0; x < Node.length;)
-                            Elem.node.classList.add(Node[x++]);
-                    Cur.node.append(Elem);
+                if (element = def.tag) {
+                    var element = instance.node = document.createElement(element);
+                    if (meta.text)
+                        element.textContent = meta.text;
+                    for (x in i = meta.atrs)
+                        instance.at(x, i[x]);
+                    for (i = 0, x = meta.css; i < x.length;)
+                        element.classList.add(x[i++]);
+                    current.node.append(instance);
                 }
-                Elem._nodeIsAppended(def.ag);
-                //Node = Type._nodeIsAppended.apply(Elem, [Elem].concat(def.ag))//.init(Elem, def.ag);
-                return Elem;
+                instance.ElementDidLoad(args);
+                return element;
             },
             next: function (a, b) {
                 var t = this;
+                //recursively pop frames where no more child calls are expected
                 while (t.Current.i === 0)
                     t.Current.done();
                 var c = t.Current;
@@ -264,8 +259,9 @@
                 this.next(null);
                 this.insert = function (def) {
                     var l, list = def.nm && (this.parent[def.nm] = []);
-                    if (!def.pr.hasOwnProperty('_nodeIsAppended'))
-                        def.pr._nodeIsAppended = this.setText;
+                    if (!def.pr.hasOwnProperty('ElementDidLoad'))
+                        def.pr.ElementDidLoad = this.setText;
+                    //UNACCEPTABLE!!!
                     for (var i = 0; i < reps; i++) {
                         l = Build.insert.call(this, {
                             pr: def.pr,
@@ -317,35 +313,30 @@
                 }
                 return meta;
             },
+            run: function (instance, instruct, info) {
+                var build = Build.New(instance);
+                instruct.apply(instance, [build].concat(info || []));
+                build.end();
+            },
             wrap_do: function (Do) {
-                put($, '_nodeIsAppended', function (args) {
-                    var build = Build.New(this);
-                    Do.apply(build._.Current.node, [build].concat(args || []));
-                    build._.Current.done();
-                });
+                return function (args) {
+                    Build.run(this, Do, args);
+                };
             },
             wrap: function (element, meta) {
-                var build;
-                put(element, '_nodeIsAppended', function () {
-                    var n, i;
+                put(element, 'ElementDidLoad', function (args) {
+                    for (var n = meta.css, i = n.length; i > 0;)
+                        this.cl(n[--i]);
                     for (n in meta.atrs)
                         this.at(n, atrs[n]);
-                    for (n = meta.css, i = n.length; i > 0;)
-                        this.cl(n[--i]);
                     if (meta.ON)
-                        if (!isArr(args = meta.ON.apply(this, args)))
-                            args = [];
-                    if (meta.DO) {
-                        build = Build.New(this);
-                        meta.DO.apply(build._.Current.node, [build].concat(args));
-                        build._.Current.done();
-                    }
-                    if (meta.IN)
-                        meta.IN.apply(this);
+                        args = isArr(meta.ON.apply(this, args)) || [];
+                    if (meta.DO)
+                        Build.run(this, meta.DO, args);
                     return meta.name;
                 });
                 if (meta.IN)
-                    noenum(element, 'innerIsAppended', meta.IN);
+                    put(element, 'InnerDidLoad', meta.IN);
             },
             interp: function (A, parentFactory) {
                 if (typeof A[0] == 'number' && A.length == 1)
@@ -370,11 +361,11 @@
                 }
                 if (typeof (a = A[i]) == 'function') {
                     i++;
-                    put($, '_nodeIsAppended', wrap_do(a));
+                    put($, 'ElementDidLoad', this.wrap_do(a));
                 }
                 if (parentFactory)
                     put($, '_factory', parentFactory);
-                this.insert($, meta);
+                this.insert(meta, $);
                 if (meta.name)
                     this.is(meta.name);
             }
@@ -405,10 +396,9 @@
                 }
             }
         }
-        function define(def, name) {
+        function define(does, name) {
             var temp = New(Element);
-            Build.wrap_do(temp, def);
-            put(temp, '_nodeIsAppended', Build.wrap_do(def));
+            put(temp, 'ElementDidLoad', Build.wrap_do(does));
             temp.tagName = name;
             return temp;
         }
@@ -428,7 +418,7 @@
             }
             if (!temp.tagName)
                 temp.tagName = meta.tag || name;
-            put(temp, '_nodeIsAppended', Build.wrap(meta));
+            put(temp, 'ElementDidLoad', Build.wrap(meta));
             put(tree, '_root', factory(temp));
             return tree;
         }
@@ -455,7 +445,7 @@
             var def = typeof control == 'string' ? root[control] && root[control]._template || Err('Control Element "' + control + '" is not yet imported or registered!') : typeof control == 'function' ? define(control, target.tagName) : typeof control == 'object' ? link(control) : Err('First argument must be identifier of an installed element, in-line element, or initializer function!');
             def.node = target;
             def._factory = Deps;
-            def._nodeIsAppended();
+            def.ElementDidLoad();
         };
         return register;
     };
@@ -463,4 +453,3 @@
     MainFactory.New = Factory;
     return MainFactory;
 }));
-//# sourceMappingURL=main.js.map

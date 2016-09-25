@@ -12,23 +12,23 @@ module.exports = function(grunt) {
         sweetjs:{
             options: {
                 modules: ["./macros/macros.sjs"],
-                sourceMap: true,
+                sourceMap: false,
                 readableNames: true
             },
             compile:{
                 src: 'build/main.js',
-                dest: 'build/'
+                dest: 'build/dist.js'
             }
         },
         replace: { dist: {
 			options: {
 				patterns: [ { match: /\$\d+/g, replacement: '' } ]
 			},
-			files: [ {src: ['build/main.js'], dest: './'} ]
+			files: [ {src: ['build/dist.js'], dest: './'} ]
         }},
 		copy: {
 			main: {
-				src: 'build/main.js',
+				src: 'build/dist.js',
 				dest: 'dist/dominator.io.js',
 			}
 		},
@@ -42,13 +42,6 @@ module.exports = function(grunt) {
            }
         }
     })
-
-    grunt.event.on('watch', function(action, filepath, target) {
-        if(action == 'changed' && target == 'sweetjs') {
-            grunt.config.set('sweetjs.src.src', [filepath]);
-            grunt.config.set('sweetjs.src.dest', filepath.replace(/^src/, 'build'));
-        }
-    });
 
     grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('grunt-contrib-watch');

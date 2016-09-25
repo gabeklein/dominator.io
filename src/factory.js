@@ -34,10 +34,9 @@ var Factory = function(opts){
 		    if (++i > q.length / 2){ q = q.slice(i); i = 0; }
 		}
 	}
-	define(def, name) => {
+	define(does, name) => {
 		var temp = New(Element);
-		Build.wrap_do(temp, def)
-		put(temp, "_nodeIsAppended", Build.wrap_do(def));
+		put(temp, "ElementDidLoad", Build.wrap_do(does));
 		temp.tagName = name;
 		return temp;
 	}
@@ -54,7 +53,7 @@ var Factory = function(opts){
 			else tree[y]=def[y];
 		}
 		if(!temp.tagName) temp.tagName = meta.tag || name;
-		put(temp, "_nodeIsAppended", Build.wrap(meta));
+		put(temp, "ElementDidLoad", Build.wrap(meta));
 		put(tree, "_root", factory(temp));
 		return tree
 	}
@@ -84,7 +83,7 @@ var Factory = function(opts){
 					: Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
 		def.node = target;
 		def._factory = Deps;
-		def._nodeIsAppended();
+		def.ElementDidLoad();
 	}
 	return register;
 }

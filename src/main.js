@@ -12,13 +12,19 @@
 			({__proto__:[]}) instanceof Array
 			? function(o, p){ o.__proto__ = p; } : CloneForIn;
 
-	isArr(arr) => arr && Object.prototype.toString.call( arr ) === '[object Array]'
-	nenum(a,b,c) => def(a,b,c ? {value:c} : {enumerable:false})[b]
-	cv(a,b,c) => [].slice.call(a,b,c)
+	isArr(a) => {
+		return a && Object.prototype.toString.call( a ) === '[object Array]' && a
+	}
+	nenum(a,b,c) => {
+		return def(a,b,c ? {value:c} : {enumerable:false})[b];
+	}
+	cv(a,b,c) => {
+		return [].slice.call(a,b,c)
+	}
 	put(a,b,c) => {
-		if(b isStr) def(a, b, c);
-		for(c in b) def(a, c, b[c]);
-		return a;
+		if(b isStr) def(a, b, {value:c});
+		else for(c in b) def(a, c, b[c]);
+		return a
 	}
 
 	Err(e) => { throw new Error(e) }
