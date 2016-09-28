@@ -23,12 +23,18 @@ macro => {
 	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $b:body } => {
 	   (function($arg (,) ...) $b ) ($val (,) ...)
 	}
-	rule infix { $args | $b:body } => {
+	rule infix { $args | $b:body2 } => {
 	  function $args $b
 	}
-	rule infix { $n $args | $b:body } => {
+	rule infix { $n $args | $b:body2 } => {
 	  function $n $args $b
 	}
+ }
+
+ macro body2{
+ 	rule{ {$body ...} }
+ 	rule{ $body:expr } => {{return $body}}
+ 	rule{ $body:expr } => {{$body}}
  }
 
 macro body{
@@ -43,8 +49,8 @@ macro __args {
 }
 
 let % = macro{
+	rule infix{ $n:ident | {$m:member ...} } => {var $n = {$m (,) ...}}
 	rule{ {$m:member ...} } => {{$m (,) ...}}
-	rule{ $n $c:% } => {$n = $c}
 	rule infix{ $x:expr | $y:expr } => { $x % $y }
  }
 

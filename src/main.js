@@ -10,17 +10,13 @@
 		des=Object.getOwnPropertyDescriptor,
 		Inherit = Object.setPrototypeOf ||
 			({__proto__:[]}) instanceof Array
-			? function(o, p){ o.__proto__ = p; } : CloneForIn;
+				? function(o, p){ o.__proto__ = p; }
+				: CloneForIn;
 
-	isArr(a) => {
-		return a && Object.prototype.toString.call( a ) === '[object Array]' && a
-	}
-	nenum(a,b,c) => {
-		return def(a,b,c ? {value:c} : {enumerable:false})[b];
-	}
-	cv(a,b,c) => {
-		return [].slice.call(a,b,c)
-	}
+	isArr(a) => a && Object.prototype.toString.call( a ) === '[object Array]' && a
+	nenum(a,b,c) => def(a,b,c ? {value:c} : {enumerable:false})[b];
+	cv(a,b,c) => [].slice.call(a,b,c)
+
 	put(a,b,c) => {
 		if(b isStr) def(a, b, {value:c});
 		else for(c in b) def(a, c, b[c]);
@@ -36,14 +32,14 @@
 		return to;
 	}
 
-	@import "element.js";
-	@import "commands.js";
-	@import "build.js";
-	@import "factory.js";
+	var Element  = @import "element.js";
+	var Build    = @import "build.js";
+	var Factory  = @import "factory.js";
+	var API      = @import "api.js";
 
-	var MainFactory = Factory();
-		MainFactory.New = Factory;
+	var initialAPI = API();
+		initialAPI.New = API;
 
-	return MainFactory;
+	return initialAPI;
 
 }))

@@ -1,4 +1,4 @@
-var Element = %{
+%{
 	on(arg, one){
 		var t=this, node=t.node;
 		if(!t.listeners) t.listeners = {};
