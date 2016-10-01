@@ -18,6 +18,7 @@
 	}
 	one(){ this.on(true, arguments) }
 	off(a){ this.node.removeEventListener(a,this.listeners[a]) }
+	append(e){ this.node.appendChild(e instanceof Element ? e.node : e) }
 	itr(n, f){
 		//run function n-times and return mapped enumerable
 		//do I need this?

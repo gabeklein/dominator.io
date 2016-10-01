@@ -71,6 +71,9 @@
             off: function (a) {
                 this.node.removeEventListener(a, this.listeners[a]);
             },
+            append: function (e) {
+                this.node.appendChild(e instanceof Element ? e.node : e);
+            },
             itr: function (n, f) {
                 //run function n-times and return mapped enumerable
                 //do I need this?
@@ -119,7 +122,7 @@
     var Build = function () {
             //EXPORTS
             return {
-                New: newSession,
+                New: session,
                 run: build,
                 parse: parse
             };
@@ -167,17 +170,16 @@
                 }
                 return meta;
             }
-            function newSession(parent) {
+            function session(Parent) {
                 //INIT
-                var Override, Last, Cache, Current = {
+                var Override, Cache, State = {
                         i: -1,
                         node: parent
                     };
                 function Do() {
-                    define(cv(arguments));
+                    make(cv(arguments));
                     return Do;
                 }
-                ;
                 CloneForIn(Do, {
                     get a() {
                         expect(1);
@@ -200,23 +202,24 @@
                         spawnOnlyIf(cond);
                         return Do;
                     },
-                    apply: function (def) {
-                        spawn({}, def, arguments);
+                    call: function (def, meta) {
+                        spawn(meta || {}, def, arguments);
+                        return Do;
                     },
                     END: function () {
-                        while (Current.i === 0)
-                            Current.pop();
+                        while (State.i === 0)
+                            State.pop();
                         return Cache;
                     }
                 });
                 return Do;
-                function define(A) {
+                function make(A) {
                     if (typeof A[0] == 'number' && A.length == 1)
                         return expect(A[0]);
                     typeof A[0] == 'string' || Err('Anonymous elements require atleast a tagname!');
-                    var a, b, i = 1, element = New(Element), meta = parse(A[0]);
+                    var a, b, i = 1, load, meta = parse(A[0]);
                     if (isArr(meta))
-                        meta = def(meta.pop(), 'outer', { value: meta });
+                        meta = put(meta.pop(), 'wrap', meta);
                     if (typeof (a = A[i]) == 'string') {
                         i++;
                         meta.text = a;
@@ -228,76 +231,68 @@
                     }
                     if (typeof (a = A[i]) == 'number') {
                         i++;
-                        meta.nChild = a;
+                        meta.expects = a;
                     }
                     if (typeof (a = A[i]) == 'function') {
                         i++;
                         put(element, 'ElementDidLoad', Factory.quickDef(a));
                     }
                     spawn(meta, element);
-                    if (meta.name)
-                        addReference(meta.name);
                 }
                 function spawn(meta, def, args) {
-                    var current = pushContext(), i, x;
-                    Current.i = meta.nChildren || 0;
+                    var parent = pushContext(null, meta.expects);
                     if (Override && Override())
                         return;
-                    var instance = Current.node = New(def);
-                    if (meta.outer)
-                        for (i = 0, x; x = meta.outer[i++];) {
+                    var i, x, a, instance = State.node = typeof def == 'function' ? def(New(Element), 'ElementDidLoad', def) : New(def || Element), element = instance.node = document.createElement(def.tagName);
+                    if (a = meta.name)
+                        addReference(a, element);
+                    if (a = meta.text)
+                        element.textContent = a;
+                    if (a = meta.wrap)
+                        for (i = 0, x; x = a[i++];) {
                         }    //process wrapper elements
-                    if (element = meta.tag) {
-                        var element = instance.node = document.createElement(element);
-                        if (meta.text)
-                            element.textContent = meta.text;
-                        for (x in i = meta.atrs)
-                            instance.at(x, i[x]);
-                        for (i = 0, x = meta.css; i < x.length;)
-                            element.classList.add(x[i++]);
-                        current.node.node.appendChild(element);
-                    }
+                    for (x in i = meta.atrs)
+                        instance.at(x, i[x]);
+                    for (i = 0, x = meta.css; i < x.length;)
+                        element.classList.add(x[i++]);
+                    parent.node.append(element);
                     instance.ElementDidLoad(args);
                     return instance;
                 }
-                function spawnOnlyIf(cond, nChildren) {
+                function spawnOnlyIf(cond, expects) {
                     if (!cond) {
                         pushContext({
                             InnerDidLoad: function () {
                                 Override = null;
                             }
-                        });
-                        Current.i = nChildren || 1;
+                        }, expects || 1);
                         Override = function () {
-                            pushContext(null);
-                            //consider i and a
                             return true;
                         };
                     }
                 }
-                function addReference(name) {
-                    var c = Current, p = parent, n = name || c.tagName, c = c.node;
-                    p[n] ? isArr(p[n]) ? p[n].push(c) : p[n] = [
+                function addReference(name, elem) {
+                    var p = Parent, e = elem || State.node, n = name || e.tagName;
+                    p[n] ? isArr(p[n]) ? p[n].push(e) : p[n] = [
                         p[n],
-                        c
-                    ] : p[n] = c;
-                    return A;
+                        e
+                    ] : p[n] = e;
                 }
                 function expect(x) {
-                    if (Current.i)
-                        Err('Current element already expects a certain number of children. Overriding that may lead to bugs!');
-                    Current.i = x;
+                    if (State.i)
+                        Err('State element already expects a certain number of children. Overriding that may lead to bugs!');
+                    State.i = x;
                 }
                 function pushContext(a, i) {
-                    while (Current.i === 0)
-                        Current.pop();
-                    var c = Current;
-                    Current = {
+                    while (State.i === 0)
+                        State.pop();
+                    var hold = State;
+                    State = {
                         i: i || 0,
                         node: a,
                         pop: function () {
-                            (Current = c).i--;
-                            (Last = a) && a.InnerDidLoad();
+                            (State = hold).i--;
+                            a.InnerDidLoad();
                         }
                     };
                     return c;
@@ -354,30 +349,72 @@
                             list && list.push(l);
                         }
                         for (i = 2; i--;)
-                            Current.pop();
+                            State.pop();
                         Override = null;
                     };
                 }
             }
         }();
     var Factory = function () {
-            var isKey = /DO|ON|ID|IN/, isProperty = /^[a-z]/;
+            return {
+                quickDef: function (does, name) {
+                    var temp = New(Element);
+                    put(temp, 'ElementDidLoad', flatWrap(does));
+                    temp.tagName = name;
+                    return temp;
+                },
+                compile: function (def, name, branch) {
+                    var outer = { _root: branch }, i = 0, q = [outer];
+                    put(outer, name, def);
+                    while (outer = q[i]) {
+                        for (var x in outer) {
+                            var existing = outer._root[x], inner = destruct(x, outer[x]);
+                            inner._root = spawner(inner._root, {});
+                            //  = (root && existing)
+                            // ? CloneForIn(root, existing, true)
+                            // : existing || root || Err("Cannot Define Nothing")
+                            q.push(inner);
+                        }
+                        if (++i > q.length / 2) {
+                            q = q.slice(i);
+                            i = 0;
+                        }
+                    }
+                }
+            };
             function flatWrap(Do) {
                 return function (args) {
                     Build.run(this, Do, args);
                 };
             }
-            function callable(meta, def) {
-                function fac() {
-                    this._.spawn(meta, def, cv(arguments));
-                    return this;
-                }
-                put(def, '_factory', fac);
-                put(fac, '_template', def);
-                Inherit(fac, Deps);
-                return fac;
+            ;
+            function spawner(def, meta) {
+                return function () {
+                    return this.call(meta || {}, def, cv(arguments));
+                };
             }
-            function wrap(element, meta) {
+            ;
+            function destruct(name, def) {
+                var temp = New(Element), defs = {}, meta = {};
+                if (x = nemum(def, 'ID'))
+                    meta = Build.parse(x, callName);
+                for (var x in def) {
+                    if (/^[a-z]/.test(y))
+                        temp[y] = def[y];
+                    else if (/DO|ON|ID|IN/.test(y))
+                        meta[y] = def[y];
+                    else if (/^_/.test(y))
+                        (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
+                    else
+                        tree[y] = def[y];
+                }
+                if (!temp.tagName)
+                    temp.tagName = meta.tag || name;
+                initialize(temp, meta);
+                put(defs, '_self', spawner(temp, meta));
+                return defs;
+            }
+            function initialize(element, meta) {
                 put(element, 'ElementDidLoad', function (args) {
                     for (var n = meta.css, i = n.length; i > 0;)
                         this.cl(n[--i]);
@@ -392,65 +429,16 @@
                 if (meta.IN)
                     put(element, 'InnerDidLoad', meta.IN);
             }
-            function compile(def, name, parent) {
-                var temp = New(Element), tree = {}, meta = {};
-                if (x = nemum(def, 'ID'))
-                    meta = Build.parse(x, callName);
-                for (var x in def) {
-                    if (isProperty.test(y))
-                        temp[y] = def[y];
-                    else if (isKey.test(y))
-                        meta[y] = def[y];
-                    else if (/^_/.test(y))
-                        (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
-                    else
-                        tree[y] = def[y];
-                }
-                if (!temp.tagName)
-                    temp.tagName = meta.tag || name;
-                put(temp, 'ElementDidLoad', wrap(meta));
-                put(tree, '_root', callable(meta, temp));
-                return tree;
-            }
-            function setText($, t) {
-                if (typeof t == 'string')
-                    $.text = t;
-            }
-            return {
-                quickDef: function (does, name) {
-                    var temp = New(Element);
-                    put(temp, 'ElementDidLoad', flatWrap(does));
-                    temp.tagName = name;
-                    return temp;
-                },
-                compile: function (q) {
-                    var i = 0, q = [q], outer;
-                    while (outer = q[i]) {
-                        for (var x in outer) {
-                            var inner = compile(outer[x], x), root = callable({}, inner._root), existing = outer._root[x];
-                            inner._root = root && existing ? CloneForIn(root, existing, true) : existing || root || Err('Cannot Define Nothing');
-                            q.push(inner);
-                        }
-                        if (++i > q.length / 2) {
-                            q = q.slice(i);
-                            i = 0;
-                        }
-                    }
-                }
-            };
         }();
     var API = function (opts) {
-        var Deps = {}, Defined = {};
+        var DEPS = {}, DEFINED = {};
         function define(path, def) {
-            //broken
+            var cd = Defined, tree = {}, name = (path = path.split('.')).pop();
             if (!def)
-                throw new Error('Bad Arguments: No definition for Element!');
-            var cd = Defined, root = {}, name = (path = path.split('.')).pop();
+                Err('Bad Arguments: No definition for Element!');
             for (var i = 0, x; x = path[i++];)
-                cd = cd[x];
-            root[name] = root;
-            put(root, '_root', Defined);
-            Factory.compile(root);
+                (cd = cd[x]) || Err('Path does not exist already! Define parent elements before their children.');
+            Factory.compile(def, name, cd);
         }
         define.startOnLoad = function (control, callback) {
             window.onload = function () {
@@ -462,11 +450,19 @@
             };
         };
         define.start = function (control, target, args) {
-            var def = typeof control == 'string' ? root[control] && New(root[control]._template) || Err('Control Element "' + control + '" is not yet imported or registered!') : typeof control == 'function' ? Factory.quickDef(control, target.tagName) : typeof control == 'object' ? Factory.compile(control) : Err('First argument must be identifier of an installed element, in-line element, or initializer function!');
-            def.node = target;
-            def.innerDefs = Deps;
-            def.ElementDidLoad(args);
-        };
+            if (typeof control == 'string')
+                New(DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'));
+            else
+                Factory.run(target, DEPS, args);
+        }    // var def =
+             // 	control isStr ? New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
+             //   : control isFun ? Factory.quickDef(control, target.tagName)
+             //   : control isObj ? Factory.compile(control)
+             //   : Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
+             // def.node = target;
+             // def.innerDefs = DEPS;
+             // def.ElementDidLoad(args);
+;
         return define;
     };
     var initialAPI = API();

@@ -1,22 +1,15 @@
 function(opts){
 
-	var Deps = {},
-		Defined = {};
+	var DEPS = {},
+		DEFINED = {};
 
-	//reimplement by returning to nLevel recursively
-	define(path, def) => { //broken
-		if(!def) throw new Error("Bad Arguments: No definition for Element!")
-		var cd=Defined, root = {},
+	define(path, def) => {
+		var cd=Defined, tree = {},
 			name=(path=path.split('.')).pop();
-
-		for(var i=0, x; x=path[i++];) cd=cd[x];
-
-		root[name] = root;
-		put(root, "_root", Defined);
-		Factory.compile(root)
+		if(!def) Err("Bad Arguments: No definition for Element!")
+		for(var i=0, x; x=path[i++];) (cd=cd[x]) || Err("Path does not exist already! Define parent elements before their children.");
+		Factory.compile(def, name, cd)
 	}
-
-
 	define.startOnLoad = (control, callback) => {
 		window.onload = () => {
 			if(!document || !document.body) Err("`document.body` not found! Is this a browser enviroment?")
@@ -25,19 +18,19 @@ function(opts){
 		}
 	}
 	define.start = (control, target, args) => {
-		var def =
-		  control isStr
-			? root[control]
-				&& New(root[control]._template)
-				|| Err('Control Element "' + control + '" is not yet imported or registered!')
-			: control isFun
-				? Factory.quickDef(control, target.tagName)
-				: control isObj
-					? Factory.compile(control)
-					: Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
-		def.node = target;
-		def.innerDefs = Deps;
-		def.ElementDidLoad(args);
+		if(control isStr) New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
+		else Factory.run(target, DEPS, args)
+
+
+
+		// var def =
+		// 	control isStr ? New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
+		//   : control isFun ? Factory.quickDef(control, target.tagName)
+		//   : control isObj ? Factory.compile(control)
+		//   : Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
+		// def.node = target;
+		// def.innerDefs = DEPS;
+		// def.ElementDidLoad(args);
 	}
 	return define;
 }

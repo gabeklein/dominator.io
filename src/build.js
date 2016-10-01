@@ -1,14 +1,11 @@
 (function(){
-//EXPORTS
-
+	//EXPORTS
 	return %{
-		New: newSession
+		New: session
 		run: build
 		parse: parse
 	}
-
-//HELPERS
-
+	//HELPERS
 	build(instance, doPhase, params) => {
 		var build = newSession(instance);
 		doPhase.apply(instance, [build].concat(params || []))
@@ -32,21 +29,16 @@
 		}
 		return meta;
 	}
-
-//FACTORY
-
-	newSession(parent) => {
-
-	//INIT
-
-		var Override, Last, Cache,
-			Current = %{
+	//FACTORY
+	session(Parent) => {
+		//INIT
+		var Override, Cache,
+			State = %{
 				i:-1
 				node:parent
 			}
 
-		function Do(){ define(__args); return Do };
-
+		Do() => { make(__args); return Do}
 		CloneForIn(Do, %{  // Build API: Built-in control and utility methods
 			get a(){           expect(1) return Do}  // and: expect a single child
 			m(){             map(__args) return Do}  // map: make mutliple nodes
@@ -54,95 +46,86 @@
 			i(name){  addReference(name) return Do}  // is: add reference to last element in build parent
 			w(cond){   spawnOnlyIf(cond) return Do}  // when: spawn children only if condition is true
 
-			apply(def){ spawn({}, def, arguments)}  // hook for predefined elements to spawn
+			call(def, meta){ spawn(meta || {}, def, arguments) return Do}  // hook for predefined elements to spawn
 			END(){
-				while(Current.i === 0) Current.pop();
+				while(State.i === 0) State.pop();
 				return Cache;
 			}
 		})
-
 		return Do;
 
-	//PRIVATE METHODS
-
-		define(A) => {
+		//PRIVATE METHODS
+		make(A) => {
 			if(A[0] isNum && A.length==1) return expect(A[0]);
 			A[0] isStr || Err("Anonymous elements require atleast a tagname!");
 
-			var a, b, i = 1,
-				element = New(Element),
+			var a, b, i = 1, load,
 				meta = parse(A[0]);
 
-			if(isArr(meta)) meta = def(meta.pop(), "outer", {value: meta})
+			if(isArr(meta)) meta = put(meta.pop(), "wrap", meta);
 			if( (a=A[i]) isStr ){i++; meta.text=a}
 			if( (a=A[i]) isObj ){i++; for(b in a) meta.atrs[b] = a[b]}
-			if( (a=A[i]) isNum ){i++; meta.nChild=a}
+			if( (a=A[i]) isNum ){i++; meta.expects=a}
 			if( (a=A[i]) isFun ){i++; put(element, "ElementDidLoad", Factory.quickDef(a))}
 			spawn(meta, element)
-			if(meta.name) addReference( meta.name )
 		}
-
 		spawn(meta, def, args) => {
-			var current = pushContext(), i, x;
-			Current.i = meta.nChildren || 0;
+			var parent = pushContext(null, meta.expects);
 
 			if(Override && Override()) return;
 
-			var instance = Current.node = New(def);
-			if(meta.outer) for(i=0, x; x=meta.outer[i++];) {
+			var i, x, a,
+				instance = State.node = def isFun
+					? def(New(Element), 'ElementDidLoad', def)
+					: New(def || Element),
+				element = instance.node = document.createElement(def.tagName);
+
+			if(a = meta.name) addReference(a, element);
+			if(a = meta.text) element.textContent = a;
+			if(a = meta.wrap) for(i=0, x; x=a[i++];) {
 				//process wrapper elements
 			}
-			if(element = meta.tag){
-				var element = instance.node = document.createElement(element);
-				if(meta.text) element.textContent = meta.text;
-				for(x in i = meta.atrs)
-					instance.at(x, i[x]);
-				for(i=0, x=meta.css; i<x.length;)
-					element.classList.add(x[i++]);
-				current.node.node.appendChild(element);
-			}
+			for(x in i = meta.atrs)
+				instance.at(x, i[x]);
+			for(i=0, x=meta.css; i<x.length;)
+				element.classList.add(x[i++]);
+
+		 	parent.node.append(element);
 			instance.ElementDidLoad(args);
 			return instance;
 		}
-
-		spawnOnlyIf(cond, nChildren) => {
+		spawnOnlyIf(cond, expects) => {
 			if(!cond){
 				pushContext(
-					%{InnerDidLoad(){
-						Override = null;
-					}}
+					%{ InnerDidLoad(){Override = null} },
+					expects || 1
 				)
-				Current.i = nChildren || 1;
-
-				Override = () => {
-					pushContext(null); //consider i and a
-					return true;
-				}
+				Override = () => true;
 			}
 		}
+		addReference(name, elem) => {
+			var p = Parent,
+				e = elem || State.node,
+				n = name || e.tagName;
 
-		addReference(name) => {
-			var c = Current, p = parent, n = name || c.tagName, c=c.node;
 			p[n]? isArr(p[n])
-					? p[n].push(c)
-					: p[n] = [p[n], c]
-				: p[n] = c;
-			return A
+					? p[n].push(e)
+					: p[n] = [p[n], e]
+				: p[n] = e;
 		}
-
 		expect(x) => {
-		   if (Current.i) Err('Current element already expects a certain number of children. Overriding that may lead to bugs!');
-		   Current.i = x;
+		   if (State.i) Err('State element already expects a certain number of children. Overriding that may lead to bugs!');
+		   State.i = x;
 	   	}
 		pushContext(a, i) => {
-			while(Current.i === 0) Current.pop();
-			var c = Current;
-			Current = %{
+			while(State.i === 0) State.pop();
+			var hold = State;
+			State = %{
 				i: i || 0
 				node: a
 				pop(){
-					(Current = c).i--;
-					(Last = a) && a.InnerDidLoad();
+					(State = hold).i--;
+					a.InnerDidLoad();
 				}
 			}
 			return c;
@@ -187,7 +170,7 @@
 					})
 					list && list.push(l);
 				}
-				for(i=2; i--;) Current.pop();
+				for(i=2; i--;) State.pop();
 				Override = null;
 			}
 		}
