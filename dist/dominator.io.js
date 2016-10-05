@@ -119,6 +119,19 @@
             InnerDidLoad: function () {
             }
         };
+    var Type = {
+            init: function () {
+                for (var n = meta.css, i = n.length; i > 0;)
+                    this.cl(n[--i]);
+                for (n in meta.atrs)
+                    this.at(n, atrs[n]);
+                if (meta.ON)
+                    args = isArr(meta.ON.apply(this, args)) || [];
+                if (meta.DO)
+                    Build.run(this, meta.DO, args);
+                return meta.name;
+            }
+        };
     var Build = function () {
             //EXPORTS
             return {
@@ -130,45 +143,6 @@
                 var build = newSession(instance);
                 doPhase.apply(instance, [build].concat(params || []));
                 build.END();
-            }
-            function parse(id) {
-                var meta = {
-                        atr: {},
-                        css: []
-                    };
-                if ((id = id.split('>')).length > 1)
-                    return id.map(parse);
-                else
-                    id = id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@^])/);
-                for (var i = id.length, m, n, name; n = id[--i];) {
-                    m = n.slice(1);
-                    switch (n[0]) {
-                    case '.':
-                        meta.css.push(m);
-                        break;
-                    case '#':
-                        meta.atr.id = m;
-                        break;
-                    case '@':
-                        m.split(',').map(function (a) {
-                            meta.atr[a] = 0;
-                        });
-                        break;
-                    case '[':
-                        meta.index = Number.parseInt(m.slice(0, -1));
-                        break;
-                    case '&':
-                        meta.name = m;
-                        meta.tag = m;
-                        break;
-                    case '^':
-                        meta.index = true;
-                        break;
-                    default:
-                        meta.tag = n;
-                    }
-                }
-                return meta;
             }
             function session(Parent) {
                 //INIT
@@ -214,12 +188,11 @@
                 });
                 return Do;
                 function make(A) {
-                    if (typeof A[0] == 'number' && A.length == 1)
+                    if (typeof A[0] == 'number')
                         return expect(A[0]);
-                    typeof A[0] == 'string' || Err('Anonymous elements require atleast a tagname!');
-                    var a, b, i = 1, load, meta = parse(A[0]);
-                    if (isArr(meta))
-                        meta = put(meta.pop(), 'wrap', meta);
+                    else
+                        typeof A[0] == 'string' || Err('Anonymous elements require atleast a tagname!');
+                    var a, b, i = 1, load, meta = Factory.destruct(A[0]);
                     if (typeof (a = A[i]) == 'string') {
                         i++;
                         meta.text = a;
@@ -297,66 +270,55 @@
                     };
                     return c;
                 }
-                function map(params) {
-                    var reps;
-                    (function parse() {
-                        var args = cv(pram), nArg = args.length, norm = [], i, j, k, cache, row, lengthwise;
-                        if (isArr(args[0])) {
-                            reps = args[0].length;
-                            for (i = 0; cache = args[i++];)
-                                if (cache.length == reps)
-                                    norm.push(cache);
-                                else
-                                    Err('Inupt arrays must be consistent.');
-                        } else if (typeof (reps = args.shift()) == 'number') {
-                            if (reps < 0) {
-                                reps = -reps;
-                                lengthwise = true;
-                            }
-                            if (!--nArg)
-                                return;
-                            else
-                                for (i = 0; cache = args[i++];)
-                                    if ((k = cache.length) == reps)
-                                        norm.push(cache);
-                                    else
-                                        for (j = 0, k = k / reps; j < k; j++)
-                                            norm.push(cache.slice(reps * j, reps * j + reps));
-                        } else
-                            Err('Map requires a number or modal array.');
-                        pram = [];
-                        for (i = 0, nArg = norm.length; i < reps; i++) {
-                            pram.push(cache = []);
-                            for (j = 0; j < nArg;)
-                                cache.push(norm[j++][i]);
-                        }
-                    }());
-                    pushContext({
-                        InnerDidLoad: function () {
-                            Override = null;
-                        }
-                    }, 1);
-                    Override = function (def) {
-                        var l, list = def.nm && (this.parent[def.nm] = []);
-                        if (!def.pr.hasOwnProperty('ElementDidLoad'))
-                            def.pr.ElementDidLoad = this.setText;
-                        //UNACCEPTABLE!!!
-                        for (var i = 0; i < reps; i++) {
-                            l = Build.insert.call(this, {
-                                pr: def.pr,
-                                ag: def.ag.concat(pram[i] || [], i)
-                            });
-                            list && list.push(l);
-                        }
-                        for (i = 2; i--;)
-                            State.pop();
-                        Override = null;
-                    };
-                }
-            }
+            }    // map(params) => {
+                 // 	var reps;
+                 // 	&() => parse{
+                 // 		var args = cv(pram), nArg=args.length, norm = [], i, j, k, cache, row, lengthwise;
+                 // 		if(isArr(args[0])){
+                 // 			reps = args[0].length;
+                 // 			for(i=0; cache = args[i++];)
+                 // 				if(cache.length == reps) norm.push(cache)
+                 // 				else Err("Inupt arrays must be consistent.");
+                 // 		}
+                 // 		else if((reps = args.shift()) isNum){
+                 // 			if(reps < 0){ reps=-reps; lengthwise = true; }
+                 // 			if(!--nArg) return;
+                 // 			else for(i=0; cache = args[i++];)
+                 // 				if((k=cache.length) == reps) norm.push(cache);
+                 // 				else for(j=0, k=k/reps; j<k; j++)
+                 // 					norm.push(cache.slice(reps*j,reps*j+reps));
+                 // 		}
+                 // 		else Err("Map requires a number or modal array.");
+                 //
+                 // 		pram = [];
+                 //
+                 // 		for(i=0, nArg=norm.length; i<reps; i++){
+                 // 			pram.push(cache = [])
+                 // 			for(j=0; j<nArg;) cache.push(norm[j++][i])
+                 // 		}
+                 // 	}
+                 // 	pushContext(%{InnerDidLoad(){
+                 // 		Override = null;
+                 // 	}}, 1);
+                 // 	Override = function(def){
+                 // 		var l, list = def.nm && (this.parent[def.nm] = []);
+                 // 		if(!def.pr.hasOwnProperty("ElementDidLoad")) def.pr.ElementDidLoad = this.setText; //UNACCEPTABLE!!!
+                 // 		for(var i=0; i<reps; i++){
+                 // 			l = Build.insert.call(this, {
+                 // 				pr:def.pr,
+                 // 				ag:def.ag.concat(pram[i] || [], i)
+                 // 			})
+                 // 			list && list.push(l);
+                 // 		}
+                 // 		for(i=2; i--;) State.pop();
+                 // 		Override = null;
+                 // 	}
+                 // }
         }();
     var Factory = function () {
             return {
+                destruct: destruct,
+                parse: parse,
                 quickDef: function (does, name) {
                     var temp = New(Element);
                     put(temp, 'ElementDidLoad', flatWrap(does));
@@ -369,7 +331,7 @@
                     while (outer = q[i]) {
                         for (var x in outer) {
                             var existing = outer._root[x], inner = destruct(x, outer[x]);
-                            inner._root = spawner(inner._root, {});
+                            inner._self = spawner(inner._self, {});
                             //  = (root && existing)
                             // ? CloneForIn(root, existing, true)
                             // : existing || root || Err("Cannot Define Nothing")
@@ -380,6 +342,7 @@
                             i = 0;
                         }
                     }
+                    return;
                 }
             };
             function flatWrap(Do) {
@@ -394,40 +357,76 @@
                 };
             }
             ;
-            function destruct(name, def) {
-                var temp = New(Element), defs = {}, meta = {};
-                if (x = nemum(def, 'ID'))
-                    meta = Build.parse(x, callName);
-                for (var x in def) {
-                    if (/^[a-z]/.test(y))
-                        temp[y] = def[y];
-                    else if (/DO|ON|ID|IN/.test(y))
-                        meta[y] = def[y];
-                    else if (/^_/.test(y))
-                        (typeof def[x] == 'string' ? meta.atrs : {})[x.substr(1)] = def[x];
-                    else
-                        tree[y] = def[y];
+            function parse(id, meta) {
+                meta.css = [];
+                meta.atr = {};
+                if (!id)
+                    return;
+                id = (id = id.split('>')).length > 1 ? put(id.pop(), 'wrap', id) : id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@^])/);
+                for (var i = id.length, m, n, name; n = id[--i];) {
+                    m = n.slice(1);
+                    switch (n[0]) {
+                    case '.':
+                        meta.css.push(m);
+                        break;
+                    case '#':
+                        meta.atr.id = m;
+                        break;
+                    case '@':
+                        m.split(',').map(function (a) {
+                            meta.atr[a] = 0;
+                        });
+                        break;
+                    case '[':
+                        meta.index = Number.parseInt(m.slice(0, -1));
+                        break;
+                    case '&':
+                        meta.name = m;
+                        meta.tag = m;
+                        break;
+                    case '^':
+                        meta.index = true;
+                        break;
+                    default:
+                        meta.tag = n;
+                    }
                 }
-                if (!temp.tagName)
-                    temp.tagName = meta.tag || name;
-                initialize(temp, meta);
-                put(defs, '_self', spawner(temp, meta));
-                return defs;
             }
-            function initialize(element, meta) {
-                put(element, 'ElementDidLoad', function (args) {
-                    for (var n = meta.css, i = n.length; i > 0;)
+            function onload(Do, On, Cs, At) {
+                return function (args) {
+                    for (var n = Cs, i = n.length; i > 0;)
                         this.cl(n[--i]);
-                    for (n in meta.atrs)
-                        this.at(n, atrs[n]);
-                    if (meta.ON)
-                        args = isArr(meta.ON.apply(this, args)) || [];
-                    if (meta.DO)
-                        Build.run(this, meta.DO, args);
-                    return meta.name;
+                    for (n in At)
+                        this.at(n, At[n]);
+                    if (On)
+                        args = isArr(On.apply(this, args)) || [];
+                    if (Do)
+                        Build.run(this, Do, args);
+                    return name;
+                };
+            }
+            function destruct(name, def) {
+                var type = {}, temp = type.self = New(Element), defs = type.innerDefs = {};
+                parse(def.ID, type);
+                for (var x in def) {
+                    if (/^[a-z]/.test(x))
+                        temp[x] = def[x];
+                    else if (/^_/.test(x))
+                        (typeof def[x] == 'string' ? type.atrs : {})[x.substr(1)] = def[x];
+                    else if (/DO|ON|ID|IN/.test(x));
+                    else
+                        tree[x] = def[x];
+                }
+                put(type, {
+                    innerDidLoad: def.IN,
+                    elementDidLoad: onload(def.DO, def.ON, type.css, type.atrs)
                 });
-                if (meta.IN)
-                    put(element, 'InnerDidLoad', meta.IN);
+                if (!temp.tagName)
+                    temp.tagName = type.tag || name;
+                // these should be more consistent
+                initialize(temp, type);
+                put(defs, '_self', spawner(temp, type));
+                return defs;
             }
         }();
     var API = function (opts) {

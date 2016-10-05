@@ -33,6 +33,7 @@
 	}
 
 	var Element  = @import "element.js";
+	var Type     = @import "type.js";
 	var Build    = @import "build.js";
 	var Factory  = @import "factory.js";
 	var API      = @import "api.js";

@@ -18,19 +18,16 @@ function(opts){
 		}
 	}
 	define.start = (control, target, args) => {
-		if(control isStr) New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
-		else Factory.run(target, DEPS, args)
-
-
-
-		// var def =
-		// 	control isStr ? New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
-		//   : control isFun ? Factory.quickDef(control, target.tagName)
-		//   : control isObj ? Factory.compile(control)
-		//   : Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
-		// def.node = target;
-		// def.innerDefs = DEPS;
-		// def.ElementDidLoad(args);
+		// if(control isStr) New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
+		// else Factory.run(DEPS, target, args)
+		var def =
+			control isStr ? New( DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!'))
+		  : control isFun ? Factory.quickDef(control)
+		  : control isObj ? Factory.compile(control)
+		  : Err("First argument must be identifier of an installed element, in-line element, or initializer function!")
+		def.node = target;
+		def.innerDefs = DEPS;
+		def.ElementDidLoad(args);
 	}
 	return define;
 }

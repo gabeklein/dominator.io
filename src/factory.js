@@ -1,12 +1,8 @@
 (function(){
 
 	return %{
-		quickDef(does, name){
-			var temp = New(Element);
-			put(temp, "ElementDidLoad", flatWrap(does));
-			temp.tagName = name;
-			return temp;
-		}
+		destruct: destruct
+		parse: parse
 		compile(def, name, branch){
 			var outer = {_root:branch}, i = 0, q = [outer];
 			put(outer, name, def);
@@ -16,8 +12,7 @@
 					var existing = outer._root[x],
 						inner = destruct(x, outer[x]);
 
-					inner._root = spawner(inner._root, {})
-
+					//inner._root =
 					//  = (root && existing)
 					// ? CloneForIn(root, existing, true)
 					// : existing || root || Err("Cannot Define Nothing")
@@ -26,39 +21,57 @@
 				}
 				if (++i > q.length / 2){ q = q.slice(i); i = 0; }
 			}
+			return
 		}
 	}
 
-	flatWrap(Do) => (args) => { Build.run(this, Do, args) };
+	parse(id, meta) => {
+		meta.css=[]; meta.atr={};
+		if(!id) return;
+		id = (id=id.split(">")).length > 1
+			? put(id.pop(), "wrap", id)
+			: id[0].toLowerCase().replace(/ /g,"").split(/(?=[\[:#&.@^])/)
+		for(var i=id.length, m, n, name; n=id[--i];){
+			m=n.slice(1);
+			switch(n[0]){
+				case ".": meta.css.push(m); break;
+				case "#": meta.atr.id=m; break;
+				case "@": m.split(',').map((a)=>{ meta.atr[a]=0 }); break;
+				case "[": meta.index=Number.parseInt(m.slice(0, -1)); break;
+				case "&": meta.name=m; meta.tag=m; break;
+				case "^": meta.index=true; break;
+				default : meta.tag=n;
+			}
+		}
+	}
 
-	spawner(def, meta) => () => this.call(meta || {}, def, __args); //get rid of the DidLoads
+	onload(Do, On) => {
+		return (args) => {
+			if(On) args = isArr(On.apply(this, args)) || [];
+			if(Do) Build(this, Do, args)
+		}
+	}
 
 	destruct(name, def) => {
-		var temp = New(Element), defs = {}, meta = {};
-		if(x = nemum(def, "ID")) meta = Build.parse(x, callName);
+		var type = {},
+			temp = type.elem = New(Element),
+			defs = type.innerDefs = {};
+		parse(def.ID, type);
 		for(var x in def){
-			if(/^[a-z]/.test(y)) temp[y]=def[y];
-			else if(/DO|ON|ID|IN/.test(y)) meta[y]=def[y];
-			else if( /^_/.test(y))
-				( def[x] isStr ? meta.atrs : {} )
-					[x.substr(1)] = def[x];
-			else tree[y]=def[y];
+			if(/^[a-z]/.test(x)) temp[x]=def[x];
+			else if( /^_/.test(x)) ( def[x] isStr ? type.atrs : {} ) [x.substr(1)] = def[x];
+			else if(/DO|ON|ID|IN/.test(x));
+			else tree[x]=def[x];
 		}
-		if(!temp.tagName) temp.tagName = meta.tag || name;
-		initialize(temp, meta);
-		put(defs, "_self", spawner(temp, meta));
+		put(type, {
+			innerDidLoad: def.IN,
+			elementDidLoad: onload(def.DO, def.ON)
+		});
+		initialize(temp, type);
+		put(defs, "_self", spawner(type));
 		return defs
 	}
 
-	initialize(element, meta) => {
-		put(element, "ElementDidLoad", (args) => {
-			for(var n=meta.css, i=n.length; i > 0;) this.cl(n[--i]);
-			for(n in meta.atrs) this.at(n, atrs[n]);
-			if(meta.ON) args = isArr(meta.ON.apply(this, args)) || [];
-			if(meta.DO) Build.run(this, meta.DO, args)
-			return meta.name;
-		})
-		if(meta.IN) put(element, "InnerDidLoad", meta.IN)
-	}
+	spawner(meta) => () => this.call(meta || {}, __args);
 
 }())
