@@ -4,12 +4,6 @@ macro isObj{ rule infix{ $d:expr |} => {typeof $d=="object"}}
 macro isNum{ rule infix{ $d:expr |} => {typeof $d=="number"}}
 macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
 
-//macro (|>) {
-//  rule infix { $lhs:expr | $rhs:expr ($arg:expr (,) ...) } => {
-//    $rhs()
-//  }
-//}
-
 macro => {
 	rule infix { $[&]() | $n:ident $b:body } => {
 	   (function $n() $b ) ()
@@ -95,6 +89,28 @@ macro accessor{
  	rule{}
  }
 
+ macro ns_method {
+ 	rule { $prop:ident $rest:ns_method }
+ 	rule { . $rest:ns_method}
+ 	rule { }
+ }
+
+ macro (>>) {
+
+ 	case infix { $val:expr | _ $fn:ns_method($args (,) ...) }
+		=> { return #{ $fn($val, $args (,) ...) } }
+
+	case infix { $val:expr | _ $fn:ns_method }
+		=> { return #{ $fn($val) } }
+
+ }
+
+//macro (|=) {
+//	case infix {$assign:expr | _ $value:expr } => {
+//		return #{$assign || ($assign = $value)}
+//	}
+//}
+
 export __args
 export gets
 export isStr
@@ -104,4 +120,4 @@ export isNum
 export isBool
 export %
 export =>
-//export |>
+export >>

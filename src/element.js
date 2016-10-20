@@ -18,7 +18,7 @@
 	}
 	one(){ this.on(true, arguments) }
 	off(a){ this.node.removeEventListener(a,this.listeners[a]) }
-	append(e){ this.node.appendChild(e instanceof Element ? e.node : e) }
+	append(e){ this.node.appendChild(e instanceof window.Element ? e : e.node) }
 	itr(n, f){
 		//run function n-times and return mapped enumerable
 		//do I need this?
@@ -32,16 +32,18 @@
 	}
 	get $(){
 		//initialize jQuery on child node and return; remember instance.
-		return jQuery isFun && def(this, "$", {value: jQuery(this.node)}).$
+		return jQuery isFun && nenum(this, "$", jQuery(this.node))
 	}
 	set text(n){
 		//override innerText of child element. Erases all existing child nodes!
-		var e=this.node; while(e.hasChildNodes()) e.removeChild(e.lastChild); this.node.appendChild(document.createTextNode(n))
+		var e=this.node;
+		while(e.hasChildNodes()) e.removeChild(e.lastChild);
+		this.node.appendChild(document.createTextNode(n))
 	}
 	binds(func){
 		//generate anonymous function to call `this[func]` by enclosing `this` element.
 		var t=this, a=__args(1);
-		return function(){t[func].apply(t, a.concat(__args))}
+		return () => { t[func].apply(t, a.concat(__args)) }
 	}
 	at(a,b){
 		//apply attribute to child DOM node. Remove if `b` is null. Sets as empty string if `b` is undefined.
