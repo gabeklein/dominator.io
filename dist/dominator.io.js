@@ -7,32 +7,25 @@
     else
         root.dom = mod();
 }(this, function () {
-    var New = Object.create, def = Object.defineProperty, des = Object.getOwnPropertyDescriptor, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (o, p) {
-            o.__proto__ = p;
-        } : CloneForIn;
+    var New = Object.create, def = Object.defineProperty, Inherit = Object.setPrototypeOf || { __proto__: [] } instanceof Array ? function (object, prototype) {
+            object.__proto__ = prototype;
+        } : cloneForIn;
     function Err(e) {
         throw new Error(e);
     }
     function Warn(e) {
         console.warn(e);
     }
-    function CloneForIn(onto, from, shallow) {
-        var O = Object;
-        for (var key in from)
-            if (!shallow || O.hasOwnProperty(from, key))
-                O.defineProperty(onto, key, O.getOwnPropertyDescriptor(from, key));
-        return onto;
-    }
     function isArr(a) {
         return a && Object.prototype.toString.call(a) === '[object Array]' && a || false;
     }
-    function nenum(a, b, c) {
-        return def(a, b, c ? { value: c } : { enumerable: false })[b];
-    }
-    ;
     function cv(a, b, c) {
         return [].slice.call(a, b, c);
     }
+    function hide(a, b, c) {
+        return def(a, b, c ? { value: c } : { enumerable: false })[b];
+    }
+    ;
     function put(a, b, c) {
         if (typeof b == 'string')
             def(a, b, { value: c });
@@ -40,6 +33,12 @@
             for (c in b)
                 def(a, c, b[c]);
         return a;
+    }
+    function cloneForIn(onto, from, shallow) {
+        var O = Object;
+        for (var key in from)
+            O.defineProperty(onto, key, O.getOwnPropertyDescriptor(from, key));
+        return onto;
     }
     var Element = {
             on: function (arg, one) {
@@ -89,7 +88,7 @@
             },
             get $() {
                 //initialize jQuery on child node and return; remember instance.
-                return typeof jQuery == 'function' && nenum(this, '$', jQuery(this.node));
+                return typeof jQuery == 'function' && hide(this, '$', jQuery(this.node));
             },
             set text(n) {
                 //override innerText of child element. Erases all existing child nodes!
@@ -119,231 +118,7 @@
             InnerDidLoad: function () {
             }
         };
-    var Build = function () {
-            function build(type, instance, doPhase, params) {
-                var build = session(instance, type);
-                doPhase.apply(instance, [build].concat(params || []));
-                build.END();
-            }
-            return build;
-            function parse(id, meta) {
-                if (!id)
-                    return;
-                id = (id = id.split('>')).length > 1 ? put(id.pop(), 'wrap', id) : id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@^])/);
-                for (var i = id.length, m, n, name; n = id[--i];) {
-                    m = n.slice(1);
-                    switch (n[0]) {
-                    case '.':
-                        meta.css.push(m);
-                        break;
-                    case '#':
-                        meta.atr.id = m;
-                        break;
-                    case '@':
-                        m.split(',').map(function (a) {
-                            meta.atr[a] = 0;
-                        });
-                        break;
-                    case '[':
-                        meta.index = Number.parseInt(m.slice(0, -1));
-                        break;
-                    case '&':
-                        meta.name = m;
-                        meta.tag = m;
-                        break;
-                    case '^':
-                        meta.index = true;
-                        break;
-                    default:
-                        meta.tag = n;
-                    }
-                }
-            }
-            function session(Parent, Type) {
-                //INIT
-                var Override, Cache, State = {
-                        i: -1,
-                        node: Parent,
-                        type: Type
-                    };
-                function Do() {
-                    make(cv(arguments));
-                    return Do;
-                }
-                CloneForIn(Do, {
-                    get a() {
-                        expect(1);
-                        return Do;
-                    },
-                    m: function () {
-                        map(cv(arguments));
-                        return Do;
-                    },
-                    M: function () {
-                        this.a;
-                        map(cv(arguments));
-                        return Do;
-                    },
-                    i: function (name) {
-                        reference(name);
-                        return Do;
-                    },
-                    w: function (cond) {
-                        spawnOnlyIf(cond);
-                        return Do;
-                    },
-                    call: function (meta) {
-                        spawn(meta || {}, arguments);
-                        return Do;
-                    },
-                    END: function () {
-                        while (State.i === 0)
-                            State.pop();
-                        return Cache;
-                    }
-                });
-                return Do;
-                function pushContext(i, done) {
-                    while (State.i === 0)
-                        State.pop();
-                    var hold = State;
-                    State = {
-                        i: i || 0,
-                        pop: function () {
-                            (State = hold).i--;
-                            if (done)
-                                done();
-                        }
-                    };
-                    return hold;
-                }
-                function make(A) {
-                    var a = A[0], i = 1, x, meta = {
-                            atr: {},
-                            css: []
-                        };
-                    if (typeof a == 'number')
-                        return expect(a);
-                    if (typeof a == 'string')
-                        parse(a, meta);
-                    else
-                        Err('Anonymous elements require atleast a tagname!');
-                    if (typeof (a = A[i]) == 'string') {
-                        i++;
-                        meta.text = a;
-                    }
-                    if (typeof (a = A[i]) == 'object') {
-                        i++;
-                        for (x in a)
-                            meta.atrs[x] = a[x];
-                    }
-                    if (typeof (a = A[i]) == 'number') {
-                        i++;
-                        meta.expects = a;
-                    }
-                    if (typeof (a = A[i]) == 'function') {
-                        i++;
-                        put(meta, 'didInsert', function (args) {
-                            build(this, a, args);
-                        });
-                    }
-                    spawn(meta);
-                }
-                function spawn(type, args) {
-                    var parentNode = pushContext(type.expects, type.willClose).node;
-                    if (Override && Override())
-                        return;
-                    var i, x, a, instance = State.node = New(type.temp || Element), element = instance.node = document.createElement(type.tag);
-                    if (a = type.wrap)
-                        for (i = 0, x; x = a[i++];) {
-                        }    /*process wrapper elements*/
-                    if (a = type.name)
-                        reference(a, instance);
-                    if (a = type.text)
-                        element.textContent = a;
-                    for (x in i = type.atrs)
-                        instance.at(x, i[x]);
-                    for (i = 0, x = type.css; i < x.length;)
-                        instance.cl(x[i++]);
-                    parentNode.append(element);
-                    if (type.didInsert)
-                        type.didInsert(instance, args);
-                }
-                function spawnOnlyIf(cond, nullifyN) {
-                    if (cond)
-                        return;
-                    pushContext(nullifyN || 1);
-                    State.onDone = function () {
-                        Override = null;
-                    };
-                    Override = function () {
-                        return true;
-                    };
-                }
-                function reference(name, elem) {
-                    var p = Parent, e = elem || State.node, n = name || e.tag;
-                    if (p[n])
-                        if (isArr(p[n]))
-                            p[n].push(e);
-                        else
-                            p[n] = [
-                                p[n],
-                                e
-                            ];
-                    else
-                        p[n] = e;
-                }
-                function expect(n) {
-                    if (State.i)
-                        Err('Cannot redefine expectation for element\'s inner nodes');
-                    State.i = n;
-                }
-            }    // map(params) => {
-                 // // 	var reps;
-                 // // 	&() => parse{
-                 // // 		var args = cv(pram), nArg=args.length, norm = [], i, j, k, cache, row, lengthwise;
-                 // // 		if(isArr(args[0])){
-                 // // 			reps = args[0].length;
-                 // // 			for(i=0; cache = args[i++];)
-                 // // 				if(cache.length == reps) norm.push(cache)
-                 // // 				else Err("Inupt arrays must be consistent.");
-                 // // 		}
-                 // // 		else if((reps = args.shift()) isNum){
-                 // // 			if(reps < 0){ reps=-reps; lengthwise = true; }
-                 // // 			if(!--nArg) return;
-                 // // 			else for(i=0; cache = args[i++];)
-                 // // 				if((k=cache.length) == reps) norm.push(cache);
-                 // // 				else for(j=0, k=k/reps; j<k; j++)
-                 // // 					norm.push(cache.slice(reps*j,reps*j+reps));
-                 // // 		}
-                 // // 		else Err("Map requires a number or modal array.");
-                 // //
-                 // // 		pram = [];
-                 // //
-                 // // 		for(i=0, nArg=norm.length; i<reps; i++){
-                 // // 			pram.push(cache = [])
-                 // // 			for(j=0; j<nArg;) cache.push(norm[j++][i])
-                 // // 		}
-                 // // 	}
-                 // // 	pushContext(1, %{WillClose(){
-                 // // 		Override = null;
-                 // // 	}});
-                 // // 	Override = function(def){
-                 // // 		var l, list = def.nm && (this.parent[def.nm] = []);
-                 // // 		if(!def.pr.hasOwnProperty("didInsert")) def.pr.didInsert = this.setText; //UNACCEPTABLE!!!
-                 // // 		for(var i=0; i<reps; i++){
-                 // // 			l = Build.insert.call(this, {
-                 // // 				pr:def.pr,
-                 // // 				ag:def.ag.concat(pram[i] || [], i)
-                 // // 			})
-                 // // 			list && list.push(l);
-                 // // 		}
-                 // // 		for(i=2; i--;) State.pop();
-                 // // 		Override = null;
-                 // // 	}
-                 // // }
-        }();
-    var Factory = function (SETTINGS) {
+    Factory = function (SETTINGS) {
         var DEPS = {}, DEFINED = {};
         function define(path, def) {
             var cd = DEFINED, name = (path = path.split('.')).pop();
@@ -427,7 +202,231 @@
         }
         ;
     };
-    var initialAPI = Factory();
-    initialAPI.New = Factory;
-    return initialAPI;
+    Build = function () {
+        function build(type, instance, doPhase, params) {
+            var build = session(instance, type);
+            doPhase.apply(instance, [build].concat(params || []));
+            build.END();
+        }
+        return build;
+        function parse(id, meta) {
+            if (!id)
+                return;
+            id = (id = id.split('>')).length > 1 ? put(id.pop(), 'wrap', id) : id[0].toLowerCase().replace(/ /g, '').split(/(?=[\[:#&.@^])/);
+            for (var i = id.length, m, n, name; n = id[--i];) {
+                m = n.slice(1);
+                switch (n[0]) {
+                case '.':
+                    meta.css.push(m);
+                    break;
+                case '#':
+                    meta.atr.id = m;
+                    break;
+                case '@':
+                    m.split(',').map(function (a) {
+                        meta.atr[a] = 0;
+                    });
+                    break;
+                case '[':
+                    meta.index = Number.parseInt(m.slice(0, -1));
+                    break;
+                case '&':
+                    meta.name = m;
+                    meta.tag = m;
+                    break;
+                case '^':
+                    meta.index = true;
+                    break;
+                default:
+                    meta.tag = n;
+                }
+            }
+        }
+        function session(Parent, Type) {
+            //INIT
+            var Override, Cache, State = {
+                    i: -1,
+                    node: Parent,
+                    type: Type
+                };
+            function Do() {
+                make(cv(arguments));
+                return Do;
+            }
+            cloneForIn(Do, {
+                get a() {
+                    expect(1);
+                    return Do;
+                },
+                m: function () {
+                    map(cv(arguments));
+                    return Do;
+                },
+                M: function () {
+                    this.a;
+                    map(cv(arguments));
+                    return Do;
+                },
+                i: function (name) {
+                    reference(name);
+                    return Do;
+                },
+                w: function (cond) {
+                    spawnOnlyIf(cond);
+                    return Do;
+                },
+                call: function (meta) {
+                    spawn(meta || {}, arguments);
+                    return Do;
+                },
+                END: function () {
+                    while (State.i === 0)
+                        State.pop();
+                    return Cache;
+                }
+            });
+            return Do;
+            function pushContext(i, done) {
+                while (State.i === 0)
+                    State.pop();
+                var hold = State;
+                State = {
+                    i: i || 0,
+                    pop: function () {
+                        (State = hold).i--;
+                        if (done)
+                            done();
+                    }
+                };
+                return hold;
+            }
+            function make(A) {
+                var a = A[0], i = 1, x, meta = {
+                        atr: {},
+                        css: []
+                    };
+                if (typeof a == 'number')
+                    return expect(a);
+                if (typeof a == 'string')
+                    parse(a, meta);
+                else
+                    Err('Anonymous elements require atleast a tagname!');
+                if (typeof (a = A[i]) == 'string') {
+                    i++;
+                    meta.text = a;
+                }
+                if (typeof (a = A[i]) == 'object') {
+                    i++;
+                    for (x in a)
+                        meta.atrs[x] = a[x];
+                }
+                if (typeof (a = A[i]) == 'number') {
+                    i++;
+                    meta.expects = a;
+                }
+                if (typeof (a = A[i]) == 'function') {
+                    i++;
+                    put(meta, 'didInsert', function (args) {
+                        build(this, a, args);
+                    });
+                }
+                spawn(meta);
+            }
+            function spawn(type, args) {
+                var parentNode = pushContext(type.expects, type.willClose).node;
+                if (Override && Override())
+                    return;
+                var i, x, a, instance = State.node = New(type.temp || Element), element = instance.node = document.createElement(type.tag);
+                if (a = type.wrap)
+                    for (i = 0, x; x = a[i++];) {
+                    }    /*process wrapper elements*/
+                if (a = type.name)
+                    reference(a, instance);
+                if (a = type.text)
+                    element.textContent = a;
+                for (x in i = type.atrs)
+                    instance.at(x, i[x]);
+                for (i = 0, x = type.css; i < x.length;)
+                    instance.cl(x[i++]);
+                parentNode.append(element);
+                if (type.didInsert)
+                    type.didInsert(instance, args);
+            }
+            function spawnOnlyIf(cond, nullifyN) {
+                if (cond)
+                    return;
+                pushContext(nullifyN || 1);
+                State.onDone = function () {
+                    Override = null;
+                };
+                Override = function () {
+                    return true;
+                };
+            }
+            function reference(name, elem) {
+                var p = Parent, e = elem || State.node, n = name || e.tag;
+                if (p[n])
+                    if (isArr(p[n]))
+                        p[n].push(e);
+                    else
+                        p[n] = [
+                            p[n],
+                            e
+                        ];
+                else
+                    p[n] = e;
+            }
+            function expect(n) {
+                if (State.i)
+                    Err('Cannot redefine expectation for element\'s inner nodes');
+                State.i = n;
+            }
+        }    // map(params) => {
+             // // 	var reps;
+             // // 	&() => parse{
+             // // 		var args = cv(pram), nArg=args.length, norm = [], i, j, k, cache, row, lengthwise;
+             // // 		if(isArr(args[0])){
+             // // 			reps = args[0].length;
+             // // 			for(i=0; cache = args[i++];)
+             // // 				if(cache.length == reps) norm.push(cache)
+             // // 				else Err("Inupt arrays must be consistent.");
+             // // 		}
+             // // 		else if((reps = args.shift()) isNum){
+             // // 			if(reps < 0){ reps=-reps; lengthwise = true; }
+             // // 			if(!--nArg) return;
+             // // 			else for(i=0; cache = args[i++];)
+             // // 				if((k=cache.length) == reps) norm.push(cache);
+             // // 				else for(j=0, k=k/reps; j<k; j++)
+             // // 					norm.push(cache.slice(reps*j,reps*j+reps));
+             // // 		}
+             // // 		else Err("Map requires a number or modal array.");
+             // //
+             // // 		pram = [];
+             // //
+             // // 		for(i=0, nArg=norm.length; i<reps; i++){
+             // // 			pram.push(cache = [])
+             // // 			for(j=0; j<nArg;) cache.push(norm[j++][i])
+             // // 		}
+             // // 	}
+             // // 	pushContext(1, %{WillClose(){
+             // // 		Override = null;
+             // // 	}});
+             // // 	Override = function(def){
+             // // 		var l, list = def.nm && (this.parent[def.nm] = []);
+             // // 		if(!def.pr.hasOwnProperty("didInsert")) def.pr.didInsert = this.setText; //UNACCEPTABLE!!!
+             // // 		for(var i=0; i<reps; i++){
+             // // 			l = Build.insert.call(this, {
+             // // 				pr:def.pr,
+             // // 				ag:def.ag.concat(pram[i] || [], i)
+             // // 			})
+             // // 			list && list.push(l);
+             // // 		}
+             // // 		for(i=2; i--;) State.pop();
+             // // 		Override = null;
+             // // 	}
+             // // }
+    }();
+    var API = Factory();
+    API.New = Factory;
+    return API;
 }));

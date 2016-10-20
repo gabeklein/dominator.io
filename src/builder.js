@@ -41,7 +41,7 @@
 			}
 
 		Do() => { make(__args); return Do}
-		CloneForIn(Do, %{  // Build API: Built-in control and utility methods
+		cloneForIn(Do, %{  // Build API: Built-in control and utility methods
 			get a(){           expect(1) return Do}  // and: expect a single child
 			m(){             map(__args) return Do}  // map: make mutliple nodes
 			M(){     this.a; map(__args) return Do}  // shortcut for mapping -inside- last element
@@ -70,6 +70,7 @@
 			}
 			return hold;
 		}
+
 		make(A) => {
 			var a = A[0], i = 1, x, meta = {atr:{}, css:[]};
 			if(a isNum) return expect(a);
@@ -81,6 +82,7 @@
 			if( (a=A[i]) isFun ){i++; put(meta, "didInsert", (args) => { build(this, a, args)})}
 			spawn(meta)
 		}
+
 		spawn(type, args) => {
 			var parentNode = pushContext(type.expects, type.willClose).node;
 			if(Override && Override()) return;
@@ -97,12 +99,14 @@
 		 	parentNode.append(element);
 			if(type.didInsert) type.didInsert(instance, args);
 		}
+
 		spawnOnlyIf(cond, nullifyN) => {
 			if(cond) return;
 			pushContext(nullifyN || 1)
 			State.onDone = () => {Override = null}
 			Override = () => true;
 		}
+
 		reference(name, elem) => {
 			var p = Parent,
 				e = elem || State.node,
@@ -114,6 +118,7 @@
 				else p[n] = [p[n], e]
 			else p[n] = e;
 		}
+
 		expect(n) => {
 		   if (State.i) Err("Cannot redefine expectation for element's inner nodes");
 		   State.i = n;

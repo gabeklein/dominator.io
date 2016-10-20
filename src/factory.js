@@ -11,6 +11,7 @@ function(SETTINGS){
 		if(def isFun) def = { DO: def }
 		compile(def, name, cd)
 	}
+
 	define.startOnLoad = (control, callback) => {
 		window.onload = () => {
 			if(!document || !document.body) Err("`document.body` not found! Is this a browser enviroment?")
@@ -18,6 +19,7 @@ function(SETTINGS){
 			if(callback isFun) callback();
 		}
 	}
+
 	define.start = (control, target, args) => {
 		var def =
 			control isStr ? DEFINED[control] || Err('Control Element "' + control + '" is not yet imported or registered!')
