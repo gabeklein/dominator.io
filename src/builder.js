@@ -38,9 +38,17 @@ var Build = () => {
 				node:Parent
 			}
 
-		Do() => { make(__args); return Do }
+		Use(type) => () => {
+			insert(type, arguments);
+			return Do
+		}
 
-		Do >> copyToForIn(%{  // Build API: Built-in control and utility methods
+		Do() => {
+			make(__args);
+			return Do
+		}
+
+		Cmd %{  // Build API: Built-in control and utility methods
 			get a(){           expect(1) return Do}  // and: expect a single child
 			m(){             map(__args) return Do}  // map: make mutliple nodes
 			M(){     this.a; map(__args) return Do}  // shortcut for mapping -inside- last element
@@ -50,20 +58,19 @@ var Build = () => {
 				while(State.i === 0) State.pop();
 				Parent.type.willClose(Parent, Cache);
 			}
-		})
+		}
 
-		Do >> include(Parent.type.defs);
+		Do  >> Inherit(Cmd)
+		Cmd >> Inherit(delegate(Parent.type.defs));
 
 		return Do;
 
-	//PRIVATE METHODS
+	//METHODS
 
-		delegate(type) => () => { insert(type, arguments); return Do }
-
-		include(API, context) => {
-			var spawnable = {}, x;
-			for(x in context) spawnable[x] = delegate(context[x])
-			Do >> Inherit(spawnable);
+		delegate(ctx) => {
+			var deligates = {}, x;
+			for(x in ctx) deligates[x] = Use(ctx[x])
+			return deligates;
 		}
 
 		push(i, done) => {
@@ -114,8 +121,8 @@ var Build = () => {
 		spawnOnlyIf(cond, nullifyN) => {
 			if(cond) return;
 			push(nullifyN || 1)
-			State.onDone = () => {Override = null}
-			Override = () => true;
+			State.onDone = () => {SpawnOp = spawn}
+			SpawnOp = () => true;
 		}
 
 		reference(name, elem) => {
