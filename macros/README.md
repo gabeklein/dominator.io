@@ -20,8 +20,9 @@ grunt
 
 ## Macros Defined ##
 
-**Clean Object Litteral**
-Has no class-like features, WYSIWYG. Wrapped by `#{}` as opposed to `{}`
+**Clean Object Definition**
+Has no class-like features, WYSIWYG. Wrapped by `%{}` as opposed to `{}`
+Note: This is a super-set of a regular object literal; you can intermingle regular property syntax.
 ```javascript
 %{
 //functions
@@ -50,7 +51,7 @@ Has no class-like features, WYSIWYG. Wrapped by `#{}` as opposed to `{}`
 
 //nested objects
 	array[item1, item2, itemN]
-	nested_COL{
+	nested_COD{
 		//same syntax as before
 	}
 

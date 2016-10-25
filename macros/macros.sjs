@@ -5,14 +5,8 @@ macro isNum{ rule infix{ $d:expr |} => {typeof $d=="number"}}
 macro isBool{rule infix{ $d:expr |} => {typeof $d=="boolean"}}
 
 macro => {
-	rule infix { $[&]() | $n:ident $b:body } => {
-	   (function $n() $b ) ()
-	}
 	rule infix { $[&]() | $b:body } => {
 	   (function() $b ) ()
-	}
-	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $n:ident $b:body } => {
-	   (function $n($arg (,) ...) $b ) ($val (,) ...)
 	}
 	rule infix { $[&]( $($arg:ident = $val:expr) (,) ...) | $b:body } => {
 	   (function($arg (,) ...) $b ) ($val (,) ...)
@@ -26,7 +20,7 @@ macro => {
  }
 
  macro body2{
- 	rule{ {$body ...} }
+ 	rule{ {$body ... } }
  	rule{ $body:expr } => {{return $body}}
  	rule{ $body:expr } => {{$body}}
  }
@@ -68,6 +62,8 @@ macro member{
 
 	rule{ $id:ident[$cell (,) ...] } => {$id : [$cell (,) ...]}
 
+	rule{ $id:ident { $memb:member ... } } => {$id : {$memb (,) ...}}
+
 }
 
 macro accessor{
@@ -97,8 +93,11 @@ macro accessor{
 
  macro (>>) {
 
- 	case infix { $val:expr | _ $fn:ns_method($args (,) ...) }
+ 	case infix { $val:expr | _ $fn:ns_method($args:expr (,) ...) }
 		=> { return #{ $fn($val, $args (,) ...) } }
+
+	case infix { $val:expr | _ return }
+		=> { return #{ return $val } }
 
 	case infix { $val:expr | _ $fn:ns_method }
 		=> { return #{ $fn($val) } }
